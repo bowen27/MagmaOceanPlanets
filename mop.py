@@ -71,30 +71,42 @@ def esat(x):
 def get_Ts(): # ** verify
     # Prognostic
     Ts = np.zeros([par.xlen],dtype='float')
-    Ts = par.Ts[0][:] + par.dt/par.cp*\
+    Ts = par.Ts[0,:] + par.dt/par.cp*\
             (\
-             par.Fnet[0][:]-par.L*par.xidot[0][:]*par.delta[0][:]\
+             par.Fnet[0,:]-par.L*par.xidot[0,:]*par.delta[0,:]\
             )     
     return Ts
 
 def get_ps(): # ** verify
     # Diagnostic
     ps = np.zeros([par.xlen],dtype='float')
-    ps = esat(par.Ts[0][:])
+    ps = esat(par.Ts[0,:])
     return ps
 
 def get_rhodel(): # ** verify
     # Diagnostic
     rhodel = np.zeros([par.xlen],dtype='float')
-    rhodel = (par.ps[0][:]-par.p0)/par.g
+    rhodel = (par.ps[0,:]-par.p0)/par.g
     return rhodel
 
 def get_xidotdel(): # ** verify
     # Prognostic 
     xidotdel = np.zeros([par.xlen],dtype='float')
-    xidotdel = par.rhodel[0][:]
+    xidotdel = par.rhodel[0,:]
     
 # Time Integration
-for i in range(parameters.tlen):
-    t = parameters.t[i]
+# ** initial conditions must be set
+for i in range(par.tlen):
     
+    # Get variables at the next time step
+    par.Ts[t+1,:]       = get_Ts()
+    par.ps[t+1,:]       = get_ps()
+    par.rhodel[t+1,:]   = get_rhodel()
+    par.xidotdel[t+1,:] = get_xidotdel()
+    par.u[t+1,:]        = get_u()
+    par.e[t+1,:]        = get_e()
+    par.T[t+1,:]        = get_T()
+    par.p[t+1,:]        = get_p()
+    par.rho[t+1,:]      = get_rho()
+    par.delta[t+1,:]    = get_delta()
+    par.xidot[t+1,:]    = get_xidot()
