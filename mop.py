@@ -49,15 +49,15 @@ par = parameters()
 # par.Ts[0,:] = np.arange(par.xlen,dtype='float') 
 # print(par.Ts[0,-1])
 
-# Upwind Scheme
+# Upwind Scheme ** 
 def dfdx(f,x):
     # Derivatives are defined at same gridpoints as other data.
     # 
     # ** left boundary condition is needed
     dfdx = np.zeros([par.xlen],dtype='float')
-    for i in range(1,par.xlen):
-        df   = f[i] - f[i-1]
-        dx   = x[i] - x[i-1]
+    for j in range(1,par.xlen):
+        df   = f[j] - f[j-1]
+        dx   = x[j] - x[j-1]
         dfdx = df/dx
     return dfdx
 
@@ -71,42 +71,49 @@ def esat(x):
 def get_Ts(): # ** verify
     # Prognostic
     Ts = np.zeros([par.xlen],dtype='float')
-    Ts = par.Ts[0,:] + par.dt/par.cp*\
+    Ts = par.Ts[i,:] + par.dt/par.cp*\
             (\
-             par.Fnet[0,:]-par.L*par.xidot[0,:]*par.delta[0,:]\
+             par.Fnet[i,:]-par.L*par.xidot[i,:]*par.delta[i,:]\
             )     
     return Ts
 
 def get_ps(): # ** verify
     # Diagnostic
     ps = np.zeros([par.xlen],dtype='float')
-    ps = esat(par.Ts[0,:])
+    ps = esat(par.Ts[i,:])
     return ps
 
 def get_rhodel(): # ** verify
     # Diagnostic
     rhodel = np.zeros([par.xlen],dtype='float')
-    rhodel = (par.ps[0,:]-par.p0)/par.g
+    rhodel = (par.ps[i,:]-par.p0)/par.g
     return rhodel
 
 def get_xidotdel(): # ** verify
     # Prognostic 
-    xidotdel = np.zeros([par.xlen],dtype='float')
-    xidotdel = par.rhodel[0,:]
+    y = np.zeros([par.xlen],dtype='float')
+    for j in range(par.xlen):
+        if j!=0:
+            y[j] = (par.rhodel[i+1,:]-par.rhodel[i,:])/par.dt + \
+                   (par.u[i,j]*par.rhodel[i,j]-par.u[i,j-1]*par.rhodel[i,j-1])/par.dx
+        else: 
+            # boundary condition at left wall
+    return y
+
     
 # Time Integration
 # ** initial conditions must be set
 for i in range(par.tlen):
     
     # Get variables at the next time step
-    par.Ts[t+1,:]       = get_Ts()
-    par.ps[t+1,:]       = get_ps()
-    par.rhodel[t+1,:]   = get_rhodel()
-    par.xidotdel[t+1,:] = get_xidotdel()
-    par.u[t+1,:]        = get_u()
-    par.e[t+1,:]        = get_e()
-    par.T[t+1,:]        = get_T()
-    par.p[t+1,:]        = get_p()
-    par.rho[t+1,:]      = get_rho()
-    par.delta[t+1,:]    = get_delta()
-    par.xidot[t+1,:]    = get_xidot()
+    par.Ts[i+1,:]       = get_Ts()
+    par.ps[i+1,:]       = get_ps()
+    par.rhodel[i+1,:]   = get_rhodel()
+    par.xidotdel[i+1,:] = get_xidotdel()
+    par.u[i+1,:]        = get_u()
+    par.e[i+1,:]        = get_e()
+    par.T[i+1,:]        = get_T()
+    par.p[i+1,:]        = get_p()
+    par.rho[i+1,:]      = get_rho()
+    par.delta[i+1,:]    = get_delta()
+    par.xidot[i+1,:]    = get_xidot()
