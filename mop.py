@@ -37,34 +37,17 @@ class parameters:
     g  = 9.81
     
     def __init__(self):
-        self.Ts         = [] # K
-        self.ps         = [] # Pa
-        self.rhodel     = [] # kg/m2
-        self.xidotdel   = [] # kg/m2/s
-        self.u          = [] # m/s
-        self.e          = [] # Pa
-        self.T          = [] # K
-        self.p          = [] # Pa
-        self.rho        = [] # kg/m3
-        self.delta      = [] # m
-        self.xidot      = [] # kg/m3/s
-        self.Fnet       = [] # W/m2
-        self.Cm         = []
-        self.Cu         = []
-        self.Ce         = []
-
-    def set_Ts(self, x): 
-        # see python list methods
-        self.Ts.clear()
-        self.Ts.append(x)
+        self.Ts , self.ps   , self.rhodel, self.xidotdel,\
+        self.u  , self.e    , self.T     , self.p       ,\
+        self.rho, self.delta, self.xidot , self.Fnet    ,\
+        self.Cm , self.Cu   , self.Ce                    \
+        = (np.zeros([parameters.tlen,parameters.xlen],dtype='float') for i in range(15))
                 
-# Test: Create a class, setup Ts as any array, and then access the last element of Ts   
+# Test: Create a class, update Ts, and then access the last element of Ts on the first time step   
 par = parameters()
-Ts = np.arange(par.xlen,dtype='float') 
-par.set_Ts(Ts) 
-# print(par.Ts[0])       # returns the entire *instance* variable
-# print(par.Ts[0][-1])   # returns the last value of the *instance* variable
-# print(par.t[-1])      # returns the last value of the *class* variable
+# Ts = np.arange(par.xlen,dtype='float') 
+# par.Ts[0,:] = np.arange(par.xlen,dtype='float') 
+# print(par.Ts[0,-1])
 
 # Upwind Scheme
 def dfdx(f,x):
@@ -84,15 +67,15 @@ def esat(x):
     y = np.zeros([par.xlen],dtype='float')
     y = par.pcc*np.exp(-(par.L/par.R)*(1/x - 1/par.Tcc))
     return y 
-      
+
 def get_Ts(): # ** verify
     # Prognostic
-    Ts_new = np.zeros([par.xlen],dtype='float')
-    Ts_new = par.Ts[0][:] + par.dt/par.cp*\
+    Ts = np.zeros([par.xlen],dtype='float')
+    Ts = par.Ts[0][:] + par.dt/par.cp*\
             (\
              par.Fnet[0][:]-par.L*par.xidot[0][:]*par.delta[0][:]\
             )     
-    return Ts_new
+    return Ts
 
 def get_ps(): # ** verify
     # Diagnostic
@@ -107,7 +90,9 @@ def get_rhodel(): # ** verify
     return rhodel
 
 def get_xidotdel(): # ** verify
-    
+    # Prognostic 
+    xidotdel = np.zeros([par.xlen],dtype='float')
+    xidotdel = par.rhodel[0][:]
     
 # Time Integration
 for i in range(parameters.tlen):
