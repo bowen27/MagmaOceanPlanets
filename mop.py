@@ -1,6 +1,11 @@
 # Goal: simulate a 1D boundary layer of a magma ocean planet
 # ** denotes a problem or code requiring verification
 
+# To do:
+# get_e , get_T, get_p, get_rho, get_delta, get_xidot
+# get_x_bc for each variable (assuming no flux bc)
+# get_Cm, get_Cu, get_Ce
+
 # Import python libraries
 import numpy as np
 
@@ -100,6 +105,27 @@ def get_xidotdel(): # ** verify
             # boundary condition at left wall
     return y
 
+def get_u(): # ** verify
+    # Prognostic
+    rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
+    u = np.zeros([par.xlen],dtype='float')       # (t+1)
+    
+    for j in range(par.xlen):
+        if j!=0:
+            rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                     \
+                         par.dt*(par.Cu[i,j] -                                                        \
+                                     (                                                                \
+                                     par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-  \ 
+                                     par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.p[i,j-1]) \
+                                     )/                                                               \
+                                     (par.x[j]-par.x[j-1])                                            \
+                                 )
+        else: 
+            # boundary condition at left wall
+    u = rhodelu[:]/par.rhodel[i+1,:]
+    return u
+
+def get_e():
     
 # Time Integration
 # ** initial conditions must be set
