@@ -109,7 +109,6 @@ def get_u(): # ** verify
     # Prognostic
     rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
     u = np.zeros([par.xlen],dtype='float')       # (t+1)
-    
     for j in range(par.xlen):
         if j!=0:
             rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                     \
@@ -126,20 +125,39 @@ def get_u(): # ** verify
     return u
 
 def get_e():
+    # Prognostic
+    rhodele = np.zeros([par.xlen],dtype='float') # (t+1)
+    e = np.zeros([par.xlen],dtype='float')       # (t+1)
+    for j in range(par.xlen):
+        if j!=0:
+            rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
+                         par.dt*(par.Ce[i,j] -                                                                     \
+                                     (                                                                             \
+                                     par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-  \ 
+                                     par.delta[i,j-1]*par.u[i,j-1]*(par.rho[i,j-1]*par.e[i,j-1] + par.p[i,j-1]) \
+                                     )/                                                                            \
+                                     (par.x[j]-par.x[j-1])                                                         \
+                                 )
+        else: 
+            # boundary condition at left wall
+    e = rhodele[:]/par.rhodel[i+1,:]
+    return e
+
+def get_T():
     
 # Time Integration
 # ** initial conditions must be set
 for i in range(par.tlen):
     
     # Get variables at the next time step
-    par.Ts[i+1,:]       = get_Ts()
-    par.ps[i+1,:]       = get_ps()
-    par.rhodel[i+1,:]   = get_rhodel()
-    par.xidotdel[i+1,:] = get_xidotdel()
-    par.u[i+1,:]        = get_u()
-    par.e[i+1,:]        = get_e()
-    par.T[i+1,:]        = get_T()
-    par.p[i+1,:]        = get_p()
-    par.rho[i+1,:]      = get_rho()
-    par.delta[i+1,:]    = get_delta()
-    par.xidot[i+1,:]    = get_xidot()
+    par.Ts[i+1,:]       = get_Ts()       + get_Ts_bc()
+    par.ps[i+1,:]       = get_ps()       + get_ps_bc()
+    par.rhodel[i+1,:]   = get_rhodel()   + get_rhodel_bc()
+    par.xidotdel[i+1,:] = get_xidotdel() + get_xidotdel_bc()
+    par.u[i+1,:]        = get_u()        + get_u_bc()
+    par.e[i+1,:]        = get_e()        + get_e_bc()
+    par.T[i+1,:]        = get_T()        + get_T_bc()
+    par.p[i+1,:]        = get_p()        + get_p_bc()
+    par.rho[i+1,:]      = get_rho()      + get_rho_bc()
+    par.delta[i+1,:]    = get_delta()    + get_delta_bc()
+    par.xidot[i+1,:]    = get_xidot()    + get_xidot_bc()
