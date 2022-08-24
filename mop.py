@@ -30,7 +30,8 @@ class parameters:
         print('CFL criterion is not met.')
         quit()
     # Thermodynamics **
-    cp = 1000     # J/kg/K
+    cv = 1e3      # J/kg/K
+    cp = 1e3      # J/kg/K
     L  = 2260e3   # J/kg
     M  = 29e-3    # kg/mol
     R  = 8.314/M  # J/kg/K
@@ -85,13 +86,13 @@ def get_Ts(): # ** verify
 def get_ps(): # ** verify
     # Diagnostic
     ps = np.zeros([par.xlen],dtype='float')
-    ps = esat(par.Ts[i,:])
+    ps = esat(par.Ts[i+1,:])
     return ps
 
 def get_rhodel(): # ** verify
     # Diagnostic
     rhodel = np.zeros([par.xlen],dtype='float')
-    rhodel = (par.ps[i,:]-par.p0)/par.g
+    rhodel = (par.ps[i+1,:]-par.p0)/par.g
     return rhodel
 
 def get_xidotdel(): # ** verify
@@ -144,6 +145,32 @@ def get_e():
     return e
 
 def get_T():
+    # Diagnostic
+    T = np.zeros([par.xlen],dtype='float') # (t+1)
+    T = (1/par.cv)*(par.e[i+1,:]-0.5*par.u[i+1,:]**2)
+    return T
+
+def get_p():
+    # Diagnostic
+    p = np.zeros([par.xlen],dtype='float') # (t+1)
+    p = esat(par.T[i+1,:])
+    return p
+
+def get_rho():
+    # Diagnostic
+    rho = np.zeros([par.xlen],dtype='float') # (t+1)
+    rho = par.p[t+1,:]/(par.R*par.T[t+1,:])
+    return rho
+
+def get_delta():
+    # Diagnostic
+    delta = np.zeros([par.xlen],dtype='float') # (t+1)
+    delta = par.rhodel[t+1,:]/par.rho[t+1,:]
+    return delta
+    
+def get_xidot():
+    
+    
     
 # Time Integration
 # ** initial conditions must be set
