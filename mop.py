@@ -134,8 +134,8 @@ def get_e():
             rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
                          par.dt*(par.Ce[i,j] -                                                                     \
                                      (                                                                             \
-                                     par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-  \ 
-                                     par.delta[i,j-1]*par.u[i,j-1]*(par.rho[i,j-1]*par.e[i,j-1] + par.p[i,j-1]) \
+                                     par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-     \ 
+                                     par.delta[i,j-1]*par.u[i,j-1]*(par.rho[i,j-1]*par.e[i,j-1] + par.p[i,j-1])    \
                                      )/                                                                            \
                                      (par.x[j]-par.x[j-1])                                                         \
                                  )
@@ -169,8 +169,23 @@ def get_delta():
     return delta
     
 def get_xidot():
+    # Diagnostic
+    xidot = np.zeros([par.xlen],dtype='float') # (t+1)
     
-    
+    for j in range(par.xlen):
+        xidot[j] = (                                                                       \
+                   par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp) + \
+                   par.g*(                                                                 \
+                         par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -             \ 
+                         par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]  -             \
+                         )/(par.x[j]-par.x[j-1])                                           \
+                   )/                                                                      \
+                   (                                                                       \
+                   par.delta[i+1,j]*(g + \
+                                    (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)\
+                                    )\
+                   )    
+    return xidot
     
 # Time Integration
 # ** initial conditions must be set
