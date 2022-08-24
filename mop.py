@@ -1,10 +1,8 @@
-# Goal: simulate a 1D boundary layer of a magma ocean planet
-# ** denotes a problem or code requiring verification
+## Goal: simulate a 1D boundary layer of a magma ocean planet
 
-# To do:
-# get_e , get_T, get_p, get_rho, get_delta, get_xidot
-# get_x_bc for each variable (assuming no flux bc)
-# get_Cm, get_Cu, get_Ce
+# Pending issues: 
+# (1) what are the boundary conditions associated with each variable?
+# (2) what are the initial conditions associated with each variable?
 
 # Import python libraries
 import numpy as np
@@ -30,17 +28,17 @@ class parameters:
         print('CFL criterion is not met.')
         quit()
     # Thermodynamics **
-    cv = 1e3      # J/kg/K
-    cp = 1e3      # J/kg/K
-    L  = 2260e3   # J/kg
-    M  = 29e-3    # kg/mol
+    cv = 1e6      # J/kg/K
+    cp = 1e6      # J/kg/K
+    L  = 1e6      # J/kg
+    M  = 1e6      # kg/mol
     R  = 8.314/M  # J/kg/K
     # Clausius-Clapeyron **
-    pcc = 1e6
-    Tcc = 1e6
+    pref = 1e6
+    Tref = 1e6
     # Free Atmosphere
-    p0  = 1e5
-    g   = 9.81
+    p0  = 1e6
+    g   = 1e6
     tau = 1e6 # damping timescale
     
     def __init__(self):
@@ -50,32 +48,42 @@ class parameters:
         self.Cm , self.Cu   , self.Ce                    \
         = (np.zeros([parameters.tlen,parameters.xlen],dtype='float') for i in range(15))
                 
-# Test: Create a class, update Ts, and then access the last element of Ts on the first time step   
-par = parameters()
-# Ts = np.arange(par.xlen,dtype='float') 
-# par.Ts[0,:] = np.arange(par.xlen,dtype='float') 
-# print(par.Ts[0,-1])
-
-# Upwind Scheme ** 
-def dfdx(f,x):
-    # Derivatives are defined at same gridpoints as other data.
-    # 
-    # ** left boundary condition is needed
-    dfdx = np.zeros([par.xlen],dtype='float')
-    for j in range(1,par.xlen):
-        df   = f[j] - f[j-1]
-        dx   = x[j] - x[j-1]
-        dfdx = df/dx
-    return dfdx
-
-# Saturation Vapor Pressure **
+# Saturation Vapor Pressure
 def esat(x):
     # Input x could be T or Ts
     y = np.zeros([par.xlen],dtype='float')
-    y = par.pcc*np.exp(-(par.L/par.R)*(1/x - 1/par.Tcc))
+    y = par.pref*np.exp(-(par.L/par.R)*(1/x - 1/par.Tref))
     return y 
 
-def get_Ts(): # ** verify
+def get_Cm():
+    # Diagnostic at current time step, i
+    Cm = np.zeros([par.xlen],dtype='float')
+    Cm = par.xidot[i,:]*par.delta[i,:]
+    return Cm
+
+def get_Cu():
+    # Diagnostic at current time step, i
+    Cu = np.zeros([par.xlen],dtype='float')
+    for j in range(par.xlen):
+        if par.xidot[i,j]>=0:
+            Cu[j] = -par.rho[i,j]*par.delta[i,j]*par.u[i,j]/par.tau
+            
+        else:
+            Cu[j] = -par.rho[i,j]  *par.delta[i,j]*par.u[i,j]/par.tau + \
+                     par.xidot[i,j]*par.delta[i,j]*par.u[i,j]
+    return Cu       
+    
+def get_Ce():
+    # Diagnostic at current time step, i
+    Ce = np.zeros([par.xlen],dtype='float')
+    for j in range(par.xlen):
+        if par.xidot[i,j]>=0:
+            Ce[j] = par.xidot[i,j]*par.delta[i,j]*par.cv*par.Ts[i,j]
+        else:
+            Ce[j] = par.xidot[i,j]*par.delta[i,j]*par.e[i,j]     
+    return Ce  
+
+def get_Ts(): 
     # Prognostic
     Ts = np.zeros([par.xlen],dtype='float')
     Ts = par.Ts[i,:] + par.dt/par.cp*\
@@ -84,19 +92,19 @@ def get_Ts(): # ** verify
             )     
     return Ts
 
-def get_ps(): # ** verify
+def get_ps(): 
     # Diagnostic
     ps = np.zeros([par.xlen],dtype='float')
     ps = esat(par.Ts[i+1,:])
     return ps
 
-def get_rhodel(): # ** verify
+def get_rhodel(): 
     # Diagnostic
     rhodel = np.zeros([par.xlen],dtype='float')
     rhodel = (par.ps[i+1,:]-par.p0)/par.g
     return rhodel
 
-def get_xidotdel(): # ** verify
+def get_xidotdel(): # ** are we solving for Cm(t+1) or Cm(t)? Does it make sense to solve for Cm(t+1)?
     # Prognostic 
     y = np.zeros([par.xlen],dtype='float')
     for j in range(par.xlen):
@@ -107,7 +115,7 @@ def get_xidotdel(): # ** verify
             # boundary condition at left wall
     return y
 
-def get_u(): # ** verify
+def get_u(): 
     # Prognostic
     rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
     u = np.zeros([par.xlen],dtype='float')       # (t+1)
@@ -188,36 +196,8 @@ def get_xidot():
                    )    
     return xidot
 
-def get_Cm():
-    # Diagnostic at current time step, i
-    Cm = np.zeros([par.xlen],dtype='float')
-    Cm = par.xidot[i,:]*par.delta[i,:]
-    return Cm
-
-def get_Cu():
-    # Diagnostic at current time step, i
-    Cu = np.zeros([par.xlen],dtype='float')
-    for j in range(par.xlen):
-        if par.xidot[i,j]>=0:
-            Cu[j] = -par.rho[i,j]*par.delta[i,j]*par.u[i,j]/par.tau
-            
-        else:
-            Cu[j] = -par.rho[i,j]  *par.delta[i,j]*par.u[i,j]/par.tau + \
-                     par.xidot[i,j]*par.delta[i,j]*par.u[i,j]
-    return Cu       
-    
-def get_Ce():
-    # Diagnostic at current time step, i
-    Ce = np.zeros([par.xlen],dtype='float')
-    for j in range(par.xlen):
-        if par.xidot[i,j]>=0:
-            Ce[j] = par.xidot[i,j]*par.delta[i,j]*par.cv*par.Ts[i,j]
-        else:
-            Ce[j] = par.xidot[i,j]*par.delta[i,j]*par.e[i,j]     
-    return Ce  
-
 # Time Integration
-# ** initial conditions must be set
+par = parameters()
 for i in range(par.tlen):
     # Get variables at current time step
     par.Cm[i,:]         = get_Cm()
