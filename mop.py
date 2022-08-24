@@ -3,6 +3,7 @@
 # Pending issues: 
 # (1) what are the boundary conditions associated with each variable?
 # (2) what are the initial conditions associated with each variable?
+# (3) validation and verification of each function
 
 # Import python libraries
 import numpy as np
