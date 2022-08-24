@@ -39,8 +39,9 @@ class parameters:
     pcc = 1e6
     Tcc = 1e6
     # Free Atmosphere
-    p0 = 1e5
-    g  = 9.81
+    p0  = 1e5
+    g   = 9.81
+    tau = 1e6 # damping timescale
     
     def __init__(self):
         self.Ts , self.ps   , self.rhodel, self.xidotdel,\
@@ -186,11 +187,42 @@ def get_xidot():
                                     )\
                    )    
     return xidot
+
+def get_Cm():
+    # Diagnostic at current time step, i
+    Cm = np.zeros([par.xlen],dtype='float')
+    Cm = par.xidot[i,:]*par.delta[i,:]
+    return Cm
+
+def get_Cu():
+    # Diagnostic at current time step, i
+    Cu = np.zeros([par.xlen],dtype='float')
+    for j in range(par.xlen):
+        if par.xidot[i,j]>=0:
+            Cu[j] = -par.rho[i,j]*par.delta[i,j]*par.u[i,j]/par.tau
+            
+        else:
+            Cu[j] = -par.rho[i,j]  *par.delta[i,j]*par.u[i,j]/par.tau + \
+                     par.xidot[i,j]*par.delta[i,j]*par.u[i,j]
+    return Cu       
     
+def get_Ce():
+    # Diagnostic at current time step, i
+    Ce = np.zeros([par.xlen],dtype='float')
+    for j in range(par.xlen):
+        if par.xidot[i,j]>=0:
+            Ce[j] = par.xidot[i,j]*par.delta[i,j]*par.cv*par.Ts[i,j]
+        else:
+            Ce[j] = par.xidot[i,j]*par.delta[i,j]*par.e[i,j]     
+    return Ce  
+
 # Time Integration
 # ** initial conditions must be set
 for i in range(par.tlen):
-    
+    # Get variables at current time step
+    par.Cm[i,:]         = get_Cm()
+    par.Cu[i,:]         = get_Cu()
+    par.Ce[i,:]         = get_Ce()
     # Get variables at the next time step
     par.Ts[i+1,:]       = get_Ts()       + get_Ts_bc()
     par.ps[i+1,:]       = get_ps()       + get_ps_bc()
