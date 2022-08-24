@@ -50,11 +50,11 @@ class parameters:
         = (np.zeros([parameters.tlen,parameters.xlen],dtype='float') for i in range(15))
                 
 # Saturation Vapor Pressure
-def esat(x):
+def get_esat(x):
     # Input x could be T or Ts
-    y = np.zeros([par.xlen],dtype='float')
-    y = par.pref*np.exp(-(par.L/par.R)*(1/x - 1/par.Tref))
-    return y 
+    esat = np.zeros([par.xlen],dtype='float')
+    esat = par.pref*np.exp(-(par.L/par.R)*(1/x - 1/par.Tref))
+    return esat
 
 def get_Cm():
     # Diagnostic at current time step, i
@@ -96,7 +96,7 @@ def get_Ts():
 def get_ps(): 
     # Diagnostic
     ps = np.zeros([par.xlen],dtype='float')
-    ps = esat(par.Ts[i+1,:])
+    ps = get_esat(par.Ts[i+1,:])
     return ps
 
 def get_rhodel(): 
@@ -107,14 +107,14 @@ def get_rhodel():
 
 def get_xidotdel(): # ** are we solving for Cm(t+1) or Cm(t)? Does it make sense to solve for Cm(t+1)?
     # Prognostic 
-    y = np.zeros([par.xlen],dtype='float')
+    xidotdel = np.zeros([par.xlen],dtype='float')
     for j in range(par.xlen):
         if j!=0:
-            y[j] = (par.rhodel[i+1,:]-par.rhodel[i,:])/par.dt + \
-                   (par.u[i,j]*par.rhodel[i,j]-par.u[i,j-1]*par.rhodel[i,j-1])/par.dx
+            xidotdel[j] = (par.rhodel[i+1,:]-par.rhodel[i,:])/par.dt + \
+                          (par.u[i,j]*par.rhodel[i,j]-par.u[i,j-1]*par.rhodel[i,j-1])/par.dx
         else: 
             # boundary condition at left wall
-    return y
+    return xidotdel
 
 def get_u(): 
     # Prognostic
@@ -163,7 +163,7 @@ def get_T():
 def get_p():
     # Diagnostic
     p = np.zeros([par.xlen],dtype='float') # (t+1)
-    p = esat(par.T[i+1,:])
+    p = get_esat(par.T[i+1,:])
     return p
 
 def get_rho():
