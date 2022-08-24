@@ -169,13 +169,13 @@ def get_p():
 def get_rho():
     # Diagnostic
     rho = np.zeros([par.xlen],dtype='float') # (t+1)
-    rho = par.p[t+1,:]/(par.R*par.T[t+1,:])
+    rho = par.p[i+1,:]/(par.R*par.T[i+1,:])
     return rho
 
 def get_delta():
     # Diagnostic
     delta = np.zeros([par.xlen],dtype='float') # (t+1)
-    delta = par.rhodel[t+1,:]/par.rho[t+1,:]
+    delta = par.rhodel[i+1,:]/par.rho[i+1,:]
     return delta
     
 def get_xidot():
