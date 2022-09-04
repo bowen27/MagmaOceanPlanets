@@ -18,6 +18,16 @@ class parameters:
     dx   = rp*np.pi/ndeg
     x    = np.arange(0,ndeg+ddeg,ddeg)*dx
     xlen = len(x)
+    # Spatial indices excluding boundary points
+    #jmin   = 2
+    #jmax   = xlen-3
+    #jmaxp1 = jmax+1
+    jmin   = 1
+    jmax   = xlen-2
+    jmaxp1 = jmax+1
+    # Spatial indices of left boundary and right boundary
+    jlb   = 0
+    jrb   = xlen-1
     # Temporal grid
     dt   = 0.01
     tmin = 0
@@ -101,8 +111,13 @@ def get_ps():
 
 def get_rhodel(): 
     # Diagnostic
+    # interior
     rhodel = np.zeros([par.xlen],dtype='float')
-    rhodel = (par.ps[i+1,:]-par.p0)/par.g
+    rhodel = (par.ps[i+1,par.jmin:par.jmaxp1]-par.p0)/par.g
+    # left boundary
+    rhodel[par.jlb] = rhodel[par.jbl+1]
+    # right boundary
+    rhodel[par.jrb] = rhodel[par.jrb-1]
     return rhodel
 
 def get_xidotdel(): # ** are we solving for Cm(t+1) or Cm(t)? Does it make sense to solve for Cm(t+1)?
@@ -120,19 +135,23 @@ def get_u():
     # Prognostic
     rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
     u = np.zeros([par.xlen],dtype='float')       # (t+1)
-    for j in range(par.xlen):
-        if j!=0:
-            rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                     \
-                         par.dt*(par.Cu[i,j] -                                                        \
-                                     (                                                                \
-                                     par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-  \ 
-                                     par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.p[i,j-1]) \
-                                     )/                                                               \
-                                     (par.x[j]-par.x[j-1])                                            \
-                                 )
-        else: 
-            # boundary condition at left wall
-    u = rhodelu[:]/par.rhodel[i+1,:]
+    # interior
+    for j in range(2,par.xlen-2): # note: u has 2 boundary points at each wall
+        rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                     \
+                     par.dt*(par.Cu[i,j] -                                                        \
+                                 (                                                                \
+                                 par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-  \ 
+                                 par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.p[i,j-1]) \
+                                 )/                                                               \
+                                 (par.x[j]-par.x[j-1])                                            \
+                             )  
+    u[2:par.xlen-2] = rhodelu[2:par.xlen-2]/par.rhodel[i+1,2:par.xlen-2]
+    # left boundary 
+    u[0] = 0
+    u[1] = 0
+    # right boundary
+    u[par.xlen-2] = 0
+    u[par.xlen-1] = 0
     return u
 
 def get_e():
@@ -157,7 +176,12 @@ def get_e():
 def get_T():
     # Diagnostic
     T = np.zeros([par.xlen],dtype='float') # (t+1)
-    T = (1/par.cv)*(par.e[i+1,:]-0.5*par.u[i+1,:]**2)
+    # interior
+    T[par.jmin:par.jmaxp1] = (1/par.cv)*(par.e[i+1,par.jmin:par.jmaxp1]-0.5*par.u[i+1,par.jmin:par.jmaxp1]**2)
+    # left boundary
+    T[par.jlb] = T[par.jlb+1]
+    # right boundary
+    T[par.jrb] = T[par.jrb-1]
     return T
 
 def get_p():
