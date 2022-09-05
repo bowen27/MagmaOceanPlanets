@@ -4,6 +4,14 @@
 # (1) what are the boundary conditions associated with each variable?
 # (2) what are the initial conditions associated with each variable?
 # (3) validation and verification of each function
+# (4) safeguards that prevent negative quantities, etc.
+
+# Additional issues:
+# (1) Since we use upwind scheme, evaluating u[t+1,j=2] in get_u() relies on u[t,j=1],
+# which is zero because of the boundary condition. Therefore, the gradient could be large.
+# (2) Because of upwind scheme, we have do decide what to do at j=0 for get_e. 
+# (3) Because of upwind scheme, we have do decide what to do at j=0 for get_xidot. 
+
 
 # Import python libraries
 import numpy as np
@@ -18,10 +26,7 @@ class parameters:
     dx   = rp*np.pi/ndeg
     x    = np.arange(0,ndeg+ddeg,ddeg)*dx
     xlen = len(x)
-    # Spatial indices excluding boundary points
-    #jmin   = 2
-    #jmax   = xlen-3
-    #jmaxp1 = jmax+1
+    # Spatial indices of the interior
     jmin   = 1
     jmax   = xlen-2
     jmaxp1 = jmax+1
@@ -29,9 +34,9 @@ class parameters:
     jlb   = 0
     jrb   = xlen-1
     # Temporal grid
-    dt   = 0.01
+    dt   = 0.01*dx
     tmin = 0
-    tmax = 1
+    tmax = dt*5
     t    = np.arange(tmin,tmax+dt,dt)
     tlen = len(t)
     # CFL criterion must be met
@@ -39,18 +44,18 @@ class parameters:
         print('CFL criterion is not met.')
         quit()
     # Thermodynamics **
-    cv = 1e6      # J/kg/K
-    cp = 1e6      # J/kg/K
-    L  = 1e6      # J/kg
-    M  = 1e6      # kg/mol
+    M  = 18e-3    # kg/mol
     R  = 8.314/M  # J/kg/K
+    cp = 1864     # J/kg/K
+    cv = cp-R     # J/kg/K
+    L  = 2260e3   # J/kg
     # Clausius-Clapeyron **
-    pref = 1e6
-    Tref = 1e6
+    pref = 3533 # Pa
+    Tref = 300  # K
     # Free Atmosphere
-    p0  = 1e6
-    g   = 1e6
-    tau = 1e6 # damping timescale
+    p0  = 2e4   # Pa
+    g   = 10    # m/s^2
+    tau = 86400 # damping timescale (s)
     
     def __init__(self):
         self.Ts , self.ps   , self.rhodel, self.xidotdel,\
@@ -111,8 +116,8 @@ def get_ps():
 
 def get_rhodel(): 
     # Diagnostic
-    # interior
     rhodel = np.zeros([par.xlen],dtype='float')
+    # interior
     rhodel = (par.ps[i+1,par.jmin:par.jmaxp1]-par.p0)/par.g
     # left boundary
     rhodel[par.jlb] = rhodel[par.jbl+1]
@@ -120,23 +125,12 @@ def get_rhodel():
     rhodel[par.jrb] = rhodel[par.jrb-1]
     return rhodel
 
-def get_xidotdel(): # ** are we solving for Cm(t+1) or Cm(t)? Does it make sense to solve for Cm(t+1)?
-    # Prognostic 
-    xidotdel = np.zeros([par.xlen],dtype='float')
-    for j in range(par.xlen):
-        if j!=0:
-            xidotdel[j] = (par.rhodel[i+1,:]-par.rhodel[i,:])/par.dt + \
-                          (par.u[i,j]*par.rhodel[i,j]-par.u[i,j-1]*par.rhodel[i,j-1])/par.dx
-        else: 
-            # boundary condition at left wall
-    return xidotdel
-
-def get_u(): 
+def get_u(): # **
     # Prognostic
     rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
     u = np.zeros([par.xlen],dtype='float')       # (t+1)
     # interior
-    for j in range(2,par.xlen-2): # note: u has 2 boundary points at each wall
+    for j in range(2,par.xlen-2): # note: u has 2 boundary points at each wall 
         rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                     \
                      par.dt*(par.Cu[i,j] -                                                        \
                                  (                                                                \
@@ -147,14 +141,14 @@ def get_u():
                              )  
     u[2:par.xlen-2] = rhodelu[2:par.xlen-2]/par.rhodel[i+1,2:par.xlen-2]
     # left boundary 
-    u[0] = 0
-    u[1] = 0
+    u[par.jlb]   = 0
+    u[par.jlb+1] = 0
     # right boundary
-    u[par.xlen-2] = 0
-    u[par.xlen-1] = 0
+    u[par.jrb-1] = 0
+    u[par.jrb]   = 0
     return u
 
-def get_e():
+def get_e(): # **
     # Prognostic
     rhodele = np.zeros([par.xlen],dtype='float') # (t+1)
     e = np.zeros([par.xlen],dtype='float')       # (t+1)
@@ -169,7 +163,8 @@ def get_e():
                                      (par.x[j]-par.x[j-1])                                                         \
                                  )
         else: 
-            # boundary condition at left wall
+            # left boundary (upwind scheme)
+            e[par.jlb] = e[par.jlb+1]
     e = rhodele[:]/par.rhodel[i+1,:]
     return e
 
@@ -202,41 +197,57 @@ def get_delta():
     delta = par.rhodel[i+1,:]/par.rho[i+1,:]
     return delta
     
-def get_xidot():
+def get_xidot(): # **
     # Diagnostic
     xidot = np.zeros([par.xlen],dtype='float') # (t+1)
-    
     for j in range(par.xlen):
-        xidot[j] = (                                                                       \
-                   par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp) + \
-                   par.g*(                                                                 \
-                         par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -             \ 
-                         par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]  -             \
-                         )/(par.x[j]-par.x[j-1])                                           \
-                   )/                                                                      \
-                   (                                                                       \
-                   par.delta[i+1,j]*(g + \
-                                    (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)\
-                                    )\
-                   )    
+        if j!=0:
+            xidot[j] = (                                                                       \
+                       par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp) + \
+                       par.g*(                                                                 \
+                             par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -             \ 
+                             par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]  -             \
+                             )/(par.x[j]-par.x[j-1])                                           \
+                       )/                                                                      \
+                       (                                                                       \
+                       par.delta[i+1,j]*(g + \
+                                        (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)\
+                                        )\
+                       )  
+        else:
+            # left boundary (upwind scheme)
+            xidot[par.jlb] = xidot[par.jlb+1]
     return xidot
+
+def get_initial_conditions():
+    # Scenario: intially saturated atmosphere with uniform Ts,T,p,delta,etc.
+    par.Ts[0,:]       = np.ones([par.xlen],dtype='float')*350 # uniform initial temp
+    par.ps[0,:]       = np.ones([par.xlen],dtype='float')*4e4 # uniform initial pressure
+    par.rhodel[0,:]   = (par.ps[0,:]-par.p0)/par.g            # uniform atmospheric mass
+    par.u[0,:]        = np.zeros([par.xlen],dtype='float')    # no wind
+    par.T[0,:]        = par.Ts[0,:]                           # T = Ts
+    par.e[0,:]        = par.cv*par.T[0,:] + 0.5*par.u[0,:]**2 
+    par.p[0,:]        = par.ps[0,:]                           # p = ps
+    par.rho[0,:]      = par.p[0,:]/(par.R*par.T[0,:])         
+    par.delta[0,:]    = par.rhodel[0,:]/par.rho[0,:]          
+    par.xidot[i+1,:]  = np.zeros([par.xlen],dtype='float')    # zero surface mass-flux
 
 # Time Integration
 par = parameters()
+get_initial_conditions()
 for i in range(par.tlen):
     # Get variables at current time step
     par.Cm[i,:]         = get_Cm()
     par.Cu[i,:]         = get_Cu()
     par.Ce[i,:]         = get_Ce()
     # Get variables at the next time step
-    par.Ts[i+1,:]       = get_Ts()       + get_Ts_bc()
-    par.ps[i+1,:]       = get_ps()       + get_ps_bc()
-    par.rhodel[i+1,:]   = get_rhodel()   + get_rhodel_bc()
-    par.xidotdel[i+1,:] = get_xidotdel() + get_xidotdel_bc()
-    par.u[i+1,:]        = get_u()        + get_u_bc()
-    par.e[i+1,:]        = get_e()        + get_e_bc()
-    par.T[i+1,:]        = get_T()        + get_T_bc()
-    par.p[i+1,:]        = get_p()        + get_p_bc()
-    par.rho[i+1,:]      = get_rho()      + get_rho_bc()
-    par.delta[i+1,:]    = get_delta()    + get_delta_bc()
-    par.xidot[i+1,:]    = get_xidot()    + get_xidot_bc()
+    par.Ts[i+1,:]       = get_Ts()       
+    par.ps[i+1,:]       = get_ps()       
+    par.rhodel[i+1,:]   = get_rhodel()   
+    par.u[i+1,:]        = get_u()        
+    par.e[i+1,:]        = get_e()        
+    par.T[i+1,:]        = get_T()        
+    par.p[i+1,:]        = get_p()        
+    par.rho[i+1,:]      = get_rho()      
+    par.delta[i+1,:]    = get_delta()   
+    par.xidot[i+1,:]    = get_xidot()    
