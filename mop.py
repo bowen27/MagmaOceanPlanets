@@ -12,9 +12,10 @@
 # (2) Because of upwind scheme, we have do decide what to do at j=0 for get_e. 
 # (3) Because of upwind scheme, we have do decide what to do at j=0 for get_xidot. 
 
-
 # Import python libraries
 import numpy as np
+import matplotlib.pyplot as plt 
+import math
 
 # Create parameter class
 
@@ -34,7 +35,7 @@ class parameters:
     jlb   = 0
     jrb   = xlen-1
     # Temporal grid
-    dt   = 0.01*dx
+    dt   = 0.2*dx
     tmin = 0
     tmax = dt*5
     t    = np.arange(tmin,tmax+dt,dt)
@@ -53,9 +54,11 @@ class parameters:
     pref = 3533 # Pa
     Tref = 300  # K
     # Free Atmosphere
-    p0  = 2e4   # Pa
-    g   = 10    # m/s^2
-    tau = 86400 # damping timescale (s)
+    p0  = 2e4    # Pa
+    g   = 10     # m/s^2
+    tau = dt*100 # damping timescale (s)
+    # Surface Energy Imbalance (+- 5 W/m^2)
+    Fnet = np.cos(np.pi*np.arange(0,ndeg+ddeg,ddeg)/ndeg)*5
     
     def __init__(self):
         self.Ts , self.ps   , self.rhodel, self.xidotdel,\
@@ -134,7 +137,7 @@ def get_u(): # **
         rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                     \
                      par.dt*(par.Cu[i,j] -                                                        \
                                  (                                                                \
-                                 par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-  \ 
+                                 par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-  \
                                  par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.p[i,j-1]) \
                                  )/                                                               \
                                  (par.x[j]-par.x[j-1])                                            \
@@ -157,7 +160,7 @@ def get_e(): # **
             rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
                          par.dt*(par.Ce[i,j] -                                                                     \
                                      (                                                                             \
-                                     par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-     \ 
+                                     par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-     \
                                      par.delta[i,j-1]*par.u[i,j-1]*(par.rho[i,j-1]*par.e[i,j-1] + par.p[i,j-1])    \
                                      )/                                                                            \
                                      (par.x[j]-par.x[j-1])                                                         \
@@ -205,9 +208,10 @@ def get_xidot(): # **
             xidot[j] = (                                                                       \
                        par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp) + \
                        par.g*(                                                                 \
-                             par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -             \ 
+                             par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -             \
                              par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]  -             \
-                             )/(par.x[j]-par.x[j-1])                                           \
+                             )/                                                                \
+                             (par.x[j]-par.x[j-1])                                             \
                        )/                                                                      \
                        (                                                                       \
                        par.delta[i+1,j]*(g + \
@@ -231,10 +235,15 @@ def get_initial_conditions():
     par.rho[0,:]      = par.p[0,:]/(par.R*par.T[0,:])         
     par.delta[0,:]    = par.rhodel[0,:]/par.rho[0,:]          
     par.xidot[i+1,:]  = np.zeros([par.xlen],dtype='float')    # zero surface mass-flux
-
+    
 # Time Integration
 par = parameters()
 get_initial_conditions()
+
+# Plot forward integration
+plt.clf()
+fig, ax = plt.subplots(7)    
+
 for i in range(par.tlen):
     # Get variables at current time step
     par.Cm[i,:]         = get_Cm()
@@ -250,4 +259,24 @@ for i in range(par.tlen):
     par.p[i+1,:]        = get_p()        
     par.rho[i+1,:]      = get_rho()      
     par.delta[i+1,:]    = get_delta()   
-    par.xidot[i+1,:]    = get_xidot()    
+    par.xidot[i+1,:]    = get_xidot()  
+    
+    ax[0] = ax.plot(par.x/np.rp,par.T[i,:]) 
+    ax[1] = ax.plot(par.x/np.rp,par.Ts[i,:]) 
+    ax[2] = ax.plot(par.x/np.rp,par.p[i,:]) 
+    ax[3] = ax.plot(par.x/np.rp,par.ps[i,:]) 
+    ax[4] = ax.plot(par.x/np.rp,par.u[i,:])
+    ax[5] = ax.plot(par.x/np.rp,par.delta[i,:])
+    ax[6] = ax.plot(par.x/np.rp,par.xidot[i,:])
+    
+ax[0].set_xlabel('T')
+ax[1].set_xlabel('Ts')
+ax[2].set_xlabel('p')
+ax[3].set_xlabel('ps')
+ax[4].set_xlabel('u')
+ax[5].set_xlabel('delta')
+ax[6].set_xlabel('xidot')
+
+plt.show()
+    
+    
