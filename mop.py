@@ -46,8 +46,8 @@ class parameters:
         self.Ts , self.ps   , self.rhodel, self.xidotdel,\
         self.u  , self.e    , self.T     , self.p       ,\
         self.rho, self.delta, self.xidot , self.Fnet    ,\
-        self.Cm , self.Cu   , self.Ce                    \
-        = (np.zeros([parameters.tlen,parameters.xlen],dtype='float') for i in range(15))
+        self.Cm , self.Cu   , self.Ce    , self.ubar     \
+        = (np.zeros([parameters.tlen,parameters.xlen],dtype='float') for i in range(16))
                 
 # Saturation Vapor Pressure
 def get_esat(x):
@@ -114,6 +114,7 @@ def get_xidotdel(): # ** are we solving for Cm(t+1) or Cm(t)? Does it make sense
                           (par.u[i,j]*par.rhodel[i,j]-par.u[i,j-1]*par.rhodel[i,j-1])/par.dx
         else: 
             # boundary condition at left wall
+            xidotdel[j] = 0
     return xidotdel
 
 def get_u(): 
@@ -122,16 +123,17 @@ def get_u():
     u = np.zeros([par.xlen],dtype='float')       # (t+1)
     for j in range(par.xlen):
         if j!=0:
-            rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                     \
-                         par.dt*(par.Cu[i,j] -                                                        \
-                                     (                                                                \
-                                     par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-  \ 
-                                     par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.p[i,j-1]) \
-                                     )/                                                               \
-                                     (par.x[j]-par.x[j-1])                                            \
-                                 )
+            rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
+                         par.dt*(par.Cu[i,j] -                                                   
+                                (                                                                
+                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-   
+                                par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.p[i,j-1]) 
+                                )/                                                               
+                                (par.x[j]-par.x[j-1])                                            
+                                )
         else: 
             # boundary condition at left wall
+            rhodelu[j]=0 # **
     u = rhodelu[:]/par.rhodel[i+1,:]
     return u
 
@@ -142,15 +144,16 @@ def get_e():
     for j in range(par.xlen):
         if j!=0:
             rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
-                         par.dt*(par.Ce[i,j] -                                                                     \
-                                     (                                                                             \
-                                     par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-     \ 
-                                     par.delta[i,j-1]*par.u[i,j-1]*(par.rho[i,j-1]*par.e[i,j-1] + par.p[i,j-1])    \
-                                     )/                                                                            \
-                                     (par.x[j]-par.x[j-1])                                                         \
-                                 )
+                         par.dt*(par.Ce[i,j] -                                                                     
+                                    (                                                                             
+                                    par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-     
+                                    par.delta[i,j-1]*par.u[i,j-1]*(par.rho[i,j-1]*par.e[i,j-1] + par.p[i,j-1])    
+                                    )/                                                                            
+                                    (par.x[j]-par.x[j-1])                                                         
+                                )
         else: 
             # boundary condition at left wall
+            rhodele[j]=0 #**
     e = rhodele[:]/par.rhodel[i+1,:]
     return e
 
@@ -181,19 +184,18 @@ def get_delta():
 def get_xidot():
     # Diagnostic
     xidot = np.zeros([par.xlen],dtype='float') # (t+1)
-    
     for j in range(par.xlen):
-        xidot[j] = (                                                                       \
-                   par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp) + \
-                   par.g*(                                                                 \
-                         par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -             \ 
-                         par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]  -             \
-                         )/(par.x[j]-par.x[j-1])                                           \
-                   )/                                                                      \
-                   (                                                                       \
-                   par.delta[i+1,j]*(g + \
-                                    (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)\
-                                    )\
+        xidot[j] =  (
+                    par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
+                    + par.g*(                                                                 
+                            par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -              
+                            par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
+                            )/(par.x[j]-par.x[j-1])
+                    )/\
+                    (                                                                       
+                   par.delta[i+1,j]*(par.g + 
+                                    (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
+                                    )
                    )    
     return xidot
 
