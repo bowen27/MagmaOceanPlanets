@@ -34,6 +34,7 @@ class parameters:
     # Spatial indices of left boundary and right boundary
     jlb   = 0
     jrb   = xlen-1
+    jlrb = [jlb,jlb+1,jrb-1,jrb]
     # Temporal grid
     dt   = 0.2*dx
     tmin = 0
@@ -102,12 +103,18 @@ def get_Ce():
             Ce[j] = par.xidot[i,j]*par.delta[i,j]*par.e[i,j]     
     return Ce  
 
+def get_ubar():
+    # Diagnostic at current time step, i
+    ubar =  np.zeros([par.xlen],dtype='float')
+    #for j in range(par.jmin,par.jmaxp1): central difference?
+
+
 def get_Ts(): 
     # Prognostic
     Ts = np.zeros([par.xlen],dtype='float')
     Ts = par.Ts[i,:] + par.dt/par.cp*\
-            (\
-             par.Fnet[i,:]-par.L*par.xidot[i,:]*par.delta[i,:]\
+            (
+             par.Fnet[i,:]-par.L*par.xidot[i,:]*par.delta[i,:]
             )     
     return Ts
 
@@ -121,32 +128,21 @@ def get_rhodel():
     # Diagnostic
     rhodel = np.zeros([par.xlen],dtype='float')
     # interior
-    rhodel = (par.ps[i+1,par.jmin:par.jmaxp1]-par.p0)/par.g
+    rhodel[par.jmin:par.jmaxp1] = (par.ps[i+1,par.jmin:par.jmaxp1]-par.p0)/par.g
     # left boundary
     rhodel[par.jlb] = rhodel[par.jbl+1]
     # right boundary
     rhodel[par.jrb] = rhodel[par.jrb-1]
     return rhodel
 
-def get_xidotdel(): # ** are we solving for Cm(t+1) or Cm(t)? Does it make sense to solve for Cm(t+1)?
-    # Prognostic 
-    xidotdel = np.zeros([par.xlen],dtype='float')
-    for j in range(par.xlen):
-        if j!=0:
-            xidotdel[j] = (par.rhodel[i+1,:]-par.rhodel[i,:])/par.dt + \
-                          (par.u[i,j]*par.rhodel[i,j]-par.u[i,j-1]*par.rhodel[i,j-1])/par.dx
-        else: 
-            # boundary condition at left wall
-            xidotdel[j] = 0
-    return xidotdel
-
 def get_u(): 
     # Prognostic
     rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
     u = np.zeros([par.xlen],dtype='float')       # (t+1)
-    for j in range(par.xlen):
-        if j!=0:
-            rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
+    # interior
+    for j in range(par.jmin+1,par.jmax):
+        # insert criterion for direction of mean wind
+        rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                 (                                                                
                                 par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-   
@@ -154,9 +150,16 @@ def get_u():
                                 )/                                                               
                                 (par.x[j]-par.x[j-1])                                            
                                 )
-        else: 
-            # boundary condition at left wall
-            rhodelu[j]=0 # **
+        # insert criterion for direction of mean wind
+        rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
+                         par.dt*(par.Cu[i,j] -                                                   
+                                (                                                                
+                                par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + par.p[i,j+1])-   
+                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2     + par.p[i,j]) 
+                                )/                                                               
+                                (par.x[j+1]-par.x[j])                                            
+                                )
+    # left and right boundaries are zero by construction
     u = rhodelu[:]/par.rhodel[i+1,:]
     return u
 
@@ -164,9 +167,10 @@ def get_e(): # **
     # Prognostic
     rhodele = np.zeros([par.xlen],dtype='float') # (t+1)
     e = np.zeros([par.xlen],dtype='float')       # (t+1)
-    for j in range(par.xlen):
-        if j!=0:
-            rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
+    # interior
+    for j in range(par.jmin,par.jmaxp1):
+        # insert criterion for direction of mean wind
+        rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
                          par.dt*(par.Ce[i,j] -                                                                     
                                     (                                                                             
                                     par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-     
@@ -174,9 +178,19 @@ def get_e(): # **
                                     )/                                                                            
                                     (par.x[j]-par.x[j-1])                                                         
                                 )
-        else: 
-            # boundary condition at left wall
-            rhodele[j]=0 #**
+        # insert criterion for direction of mean wind
+        rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
+                         par.dt*(par.Ce[i,j] -                                                                     
+                                    (                                                                             
+                                    par.delta[i,j+1]*par.u[i,j+1]*(par.rho[i,j+1]*par.e[i,j+1] + par.p[i,j+1])-     
+                                    par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])    
+                                    )/                                                                            
+                                    (par.x[j+1]-par.x[j])                                                         
+                                )
+    # left boundary
+    rhodele[par.jlb] = par.rho[i,par.jlb]*par.delta[i,par.jlb]*par.e[i,par.jlb] + par.dt*par.Ce[i,par.jlb]    
+    # right boundary
+    rhodele[par.jrb] = par.rho[i,par.jrb]*par.delta[i,par.jrb]*par.e[i,par.jrb] + par.dt*par.Ce[i,par.jrb]
     e = rhodele[:]/par.rhodel[i+1,:]
     return e
 
@@ -185,9 +199,9 @@ def get_T():
     T = np.zeros([par.xlen],dtype='float') # (t+1)
     # interior
     T[par.jmin:par.jmaxp1] = (1/par.cv)*(par.e[i+1,par.jmin:par.jmaxp1]-0.5*par.u[i+1,par.jmin:par.jmaxp1]**2)
-    # left boundary
+    # left boundary (no flux)
     T[par.jlb] = T[par.jlb+1]
-    # right boundary
+    # right boundary (no flux)
     T[par.jrb] = T[par.jrb-1]
     return T
 
@@ -213,6 +227,7 @@ def get_xidot(): # **
     # Diagnostic
     xidot = np.zeros([par.xlen],dtype='float') # (t+1)
     for j in range(par.xlen):
+        # insert criterion for direction of mean wind
         xidot[j] =  (
                     par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
                     + par.g*(                                                                 
@@ -221,10 +236,23 @@ def get_xidot(): # **
                             )/(par.x[j]-par.x[j-1])
                     )/\
                     (                                                                       
-                   par.delta[i+1,j]*(par.g + 
+                    par.delta[i+1,j]*(par.g + 
                                     (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
                                     )
-                   )    
+                    )    
+        # insert criterion for direction of mean wind
+        xidot[j] =  (
+                    par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
+                    + par.g*(                                                                 
+                            par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]    -              
+                            par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]        
+                            )/(par.x[j+1]-par.x[j])
+                    )/\
+                    (                                                                       
+                    par.delta[i+1,j]*(par.g + 
+                                    (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
+                                    )
+                    )    
     return xidot
 
 def get_initial_conditions():
