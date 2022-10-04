@@ -6,12 +6,6 @@
 # (3) validation and verification of each function
 # (4) safeguards that prevent negative quantities, etc.
 
-# Additional issues:
-# (1) Since we use upwind scheme, evaluating u[t+1,j=2] in get_u() relies on u[t,j=1],
-# which is zero because of the boundary condition. Therefore, the gradient could be large.
-# (2) Because of upwind scheme, we have do decide what to do at j=0 for get_e. 
-# (3) Because of upwind scheme, we have do decide what to do at j=0 for get_xidot. 
-
 # Import python libraries
 import numpy as np
 import matplotlib.pyplot as plt 
@@ -141,17 +135,17 @@ def get_u():
     u = np.zeros([par.xlen],dtype='float')       # (t+1)
     # interior
     for j in range(par.jmin+1,par.jmax):
-        # insert criterion for direction of mean wind
-        rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
+        if par.u[i,j]>0:
+            rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
-                                (                                                                
-                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-   
-                                par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.p[i,j-1]) 
-                                )/                                                               
-                                (par.x[j]-par.x[j-1])                                            
-                                )
-        # insert criterion for direction of mean wind
-        rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
+                                    (                                                                
+                                    par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.p[i,j])-   
+                                    par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.p[i,j-1]) 
+                                    )/                                                               
+                                    (par.x[j]-par.x[j-1])                                            
+                                    )
+        elif par.u[i,j]<0:
+            rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                 (                                                                
                                 par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + par.p[i,j+1])-   
@@ -170,7 +164,8 @@ def get_e(): # **
     # interior
     for j in range(par.jmin,par.jmaxp1):
         # insert criterion for direction of mean wind
-        rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
+        if par.u[i,j]>0:
+            rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
                          par.dt*(par.Ce[i,j] -                                                                     
                                     (                                                                             
                                     par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-     
@@ -178,8 +173,8 @@ def get_e(): # **
                                     )/                                                                            
                                     (par.x[j]-par.x[j-1])                                                         
                                 )
-        # insert criterion for direction of mean wind
-        rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
+        elif par.u[i,j]<0:
+            rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
                          par.dt*(par.Ce[i,j] -                                                                     
                                     (                                                                             
                                     par.delta[i,j+1]*par.u[i,j+1]*(par.rho[i,j+1]*par.e[i,j+1] + par.p[i,j+1])-     
@@ -227,8 +222,8 @@ def get_xidot(): # **
     # Diagnostic
     xidot = np.zeros([par.xlen],dtype='float') # (t+1)
     for j in range(par.xlen):
-        # insert criterion for direction of mean wind
-        xidot[j] =  (
+        if par.u[i,j]>0:
+            xidot[j] =  (
                     par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
                     + par.g*(                                                                 
                             par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -              
@@ -240,8 +235,8 @@ def get_xidot(): # **
                                     (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
                                     )
                     )    
-        # insert criterion for direction of mean wind
-        xidot[j] =  (
+        elif par.u[i,j]<0:
+            xidot[j] =  (
                     par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
                     + par.g*(                                                                 
                             par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]    -              
