@@ -225,33 +225,58 @@ def get_delta():
 def get_xidot(): # **
     # Diagnostic
     xidot = np.zeros([par.xlen],dtype='float') # (t+1)
-    for j in range(par.xlen):
+    for j in range(par.jmin,par.jmaxp1):
         if par.u[i,j]>=0:
             xidot[j] =  (
                         par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
                         + par.g*(                                                                 
-                            par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]    -              
-                            par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
+                            par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]              
+                            -par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
                             )/(par.x[j]-par.x[j-1])
                         )/\
                         (                                                                       
                         par.delta[i+1,j]*(par.g + 
-                                    (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
-                                    )
+                                         (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
+                                         )
                         )
         elif par.u[i,j]<0:
             xidot[j] =  (
                         par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
                         + par.g*(                                                                 
-                            par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]    -              
-                            par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]        
+                            par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]           
+                           -par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]        
                             )/(par.x[j+1]-par.x[j])
                         )/\
                         (                                                                       
                         par.delta[i+1,j]*(par.g + 
-                                    (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
-                                    )
+                                         (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
+                                         )
                         )    
+    # left boundary
+    j = par.jlb
+    xidot[j] =  (
+                par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
+               +par.g*(                                                                 
+                        par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]           
+                        -par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]        
+                    )/(par.x[j+1]-par.x[j])
+                )/\
+                (                                                                       
+                par.delta[i+1,j]*(par.g + (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp))
+                )    
+    # right boundary
+    j = par.jrb
+    xidot[j] =  (
+                 par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
+                +par.g*(                                                                 
+                        par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]              
+                        -par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
+                        )/(par.x[j]-par.x[j-1])
+                )/\
+                (                                                                       
+                par.delta[i+1,j]*(par.g + (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp))
+                )
+
     return xidot
 
 def get_initial_conditions():
