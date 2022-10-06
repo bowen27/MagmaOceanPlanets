@@ -38,12 +38,17 @@ class parameters:
     if not dt/dx < 0.4:
         print('CFL criterion is not met.')
         quit()
-    # Thermodynamics **
+    # Thermodynamics of Atmosphere**
     M  = 18e-3    # kg/mol
     R  = 8.314/M  # J/kg/K
     cp = 1864     # J/kg/K
     cv = cp-R     # J/kg/K
     L  = 2260e3   # J/kg
+    # Thermodynamics of Ocean
+    cpo  = 4184 # J/kg/K
+    rhoo = 1000 # kg/m^3
+    ho   = 4000 # m
+    Co  = cpo*rhoo*ho # J/m^2/K
     # Clausius-Clapeyron **
     pref = 3533 # Pa
     Tref = 300  # K
@@ -110,7 +115,7 @@ def get_Ce():
 def get_Ts(): 
     # Prognostic
     Ts = np.zeros([par.xlen],dtype='float')
-    Ts = par.Ts[i,:] + par.dt/par.cp*\
+    Ts = par.Ts[i,:] + par.dt/par.Co*\
             (
              par.Fnet[i,:]-par.L*par.xidot[i,:]*par.delta[i,:]
             )   
@@ -228,7 +233,7 @@ def get_xidot(): # **
     for j in range(par.jmin,par.jmaxp1):
         if par.u[i,j]>=0:
             xidot[j] =  (
-                        par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
+                        par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.Co)  
                         + par.g*(                                                                 
                                 par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]              
                                -par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
@@ -236,12 +241,12 @@ def get_xidot(): # **
                         )/\
                         (                                                                       
                         par.delta[i+1,j]*(par.g + 
-                                         (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
+                                         (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.Co)
                                          )
                         )
         elif par.u[i,j]<0:
             xidot[j] =  (
-                        par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
+                        par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.Co)  
                         + par.g*(                                                                 
                                 par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]           
                                -par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]        
@@ -249,35 +254,35 @@ def get_xidot(): # **
                         )/\
                         (                                                                       
                         par.delta[i+1,j]*(par.g + 
-                                         (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp)
+                                         (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.Co)
                                          )
                         )    
     # left boundary
     j = par.jlb
     xidot[j] =  (
-                par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
+                par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.Co)  
                +par.g*(                                                                 
                         par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]           
                         -par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]        
                     )/(par.x[j+1]-par.x[j])
                 )/\
                 (                                                                       
-                par.delta[i+1,j]*(par.g + (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp))
+                par.delta[i+1,j]*(par.g + (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.Co))
                 )    
     # right boundary
     j = par.jrb
     xidot[j] =  (
-                 par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
+                 par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.Co)  
                 +par.g*(                                                                 
                         par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]              
                         -par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
                         )/(par.x[j]-par.x[j-1])
                 )/\
                 (                                                                       
-                par.delta[i+1,j]*(par.g + (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp))
+                par.delta[i+1,j]*(par.g + (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.Co))
                 )
 
-    print((par.ps[i+1,:]*par.L**2)/(par.R*par.Ts[i+1,:]**2*par.cp))
+    print((par.ps[i+1,:]*par.L**2)/(par.R*par.Ts[i+1,:]**2*par.Co))
     return xidot
 
 def get_initial_conditions():
