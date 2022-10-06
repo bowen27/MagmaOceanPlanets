@@ -5,6 +5,7 @@
 # (2) what are the initial conditions associated with each variable?
 # (3) validation and verification of each function
 # (4) safeguards that prevent negative quantities, etc.
+# (5) Resolve the noise originating at the boundaries
 
 # Import python libraries
 import numpy as np
