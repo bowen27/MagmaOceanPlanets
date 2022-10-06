@@ -25,6 +25,7 @@ class parameters:
     jmin   = 1
     jmax   = xlen-2
     jmaxp1 = jmax+1
+    jterm  = np.where(x==90*dx)[0][0] # terminator index
     # Spatial indices of left boundary and right boundary
     jlb   = 0
     jrb   = xlen-1
@@ -172,9 +173,9 @@ def get_e(): # **
     rhodele = np.zeros([par.xlen],dtype='float') # (t+1)
     e = np.zeros([par.xlen],dtype='float')       # (t+1)
     # interior
-    for j in range(par.jmin,par.jmaxp1):
+    for j in range(par.jmin+1,par.jmax):
         # insert criterion for direction of mean wind
-        if par.u[i,j]>=0:
+        if (par.u[i,j]>=0 and i!=0):
             rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
                          par.dt*(par.Ce[i,j] -                                                                     
                                     (                                                                             
@@ -183,7 +184,7 @@ def get_e(): # **
                                     )/                                                                            
                                     (par.x[j]-par.x[j-1])                                                         
                                 )
-        elif par.u[i,j]<0:
+        elif (par.u[i,j]<0 and i!=0):
             rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
                          par.dt*(par.Ce[i,j] -                                                                     
                                     (                                                                             
@@ -192,11 +193,39 @@ def get_e(): # **
                                     )/                                                                            
                                     (par.x[j+1]-par.x[j])                                                         
                                 )
-    # left boundary
-    rhodele[par.jlb] = par.rho[i,par.jlb]*par.delta[i,par.jlb]*par.e[i,par.jlb] + par.dt*par.Ce[i,par.jlb]    
+        elif (i==0):
+            # This routine is followed at initialization (prevents noise at the boundaries)
+            if j<=par.jterm: 
+                # day-side
+                rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
+                         par.dt*(par.Ce[i,j] -                                                                     
+                                    (                                                                             
+                                    par.delta[i,j+1]*par.u[i,j+1]*(par.rho[i,j+1]*par.e[i,j+1] + par.p[i,j+1])-     
+                                    par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])    
+                                    )/                                                                            
+                                    (par.x[j+1]-par.x[j])                                                         
+                                )
+                # night-side
+            elif j>par.jterm:
+                rhodele[j] = par.rho[i,j]*par.delta[i,j]*par.e[i,j] +                                                  \
+                         par.dt*(par.Ce[i,j] -                                                                     
+                                    (                                                                             
+                                    par.delta[i,j]  *par.u[i,j]  *(par.rho[i,j]  *par.e[i,j]   + par.p[i,j])-     
+                                    par.delta[i,j-1]*par.u[i,j-1]*(par.rho[i,j-1]*par.e[i,j-1] + par.p[i,j-1])    
+                                    )/                                                                            
+                                    (par.x[j]-par.x[j-1])                                                         
+                                )    
+        else:
+            print('error: unforseen case in get_e')
+            exit()
+    # left boundaries
+    rhodele[par.jlb]   = par.rho[i,par.jlb]  *par.delta[i,par.jlb]  *par.e[i,par.jlb]   + par.dt*par.Ce[i,par.jlb]    
+    rhodele[par.jlb+1] = par.rho[i,par.jlb+1]*par.delta[i,par.jlb+1]*par.e[i,par.jlb+1] + par.dt*par.Ce[i,par.jlb+1]   
     # right boundary
-    rhodele[par.jrb] = par.rho[i,par.jrb]*par.delta[i,par.jrb]*par.e[i,par.jrb] + par.dt*par.Ce[i,par.jrb]
+    rhodele[par.jrb-1] = par.rho[i,par.jrb-1]*par.delta[i,par.jrb-1]*par.e[i,par.jrb-1] + par.dt*par.Ce[i,par.jrb-1]
+    rhodele[par.jrb]   = par.rho[i,par.jrb]  *par.delta[i,par.jrb]  *par.e[i,par.jrb]   + par.dt*par.Ce[i,par.jrb]
     e = rhodele[:]/par.rhodel[i+1,:]
+    print(e)
     return e
 
 def get_T():
@@ -282,8 +311,8 @@ def get_xidot(): # **
                 (                                                                       
                 par.delta[i+1,j]*(par.g + (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.Co))
                 )
-
-    print((par.ps[i+1,:]*par.L**2)/(par.R*par.Ts[i+1,:]**2*par.Co))
+    #print((par.ps[i+1,:]*par.L**2)/(par.R*par.Ts[i+1,:]**2*par.Co))
+    print(xidot)
     return xidot
 
 def get_initial_conditions():
