@@ -230,9 +230,9 @@ def get_xidot(): # **
             xidot[j] =  (
                         par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
                         + par.g*(                                                                 
-                            par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]              
-                            -par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
-                            )/(par.x[j]-par.x[j-1])
+                                par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]              
+                               -par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
+                                )/(par.x[j]-par.x[j-1])
                         )/\
                         (                                                                       
                         par.delta[i+1,j]*(par.g + 
@@ -243,9 +243,9 @@ def get_xidot(): # **
             xidot[j] =  (
                         par.Fnet[i+1,j]*(par.ps[i+1,j]*par.L)/(par.R*par.Ts[i+1,j]**2*par.cp)  
                         + par.g*(                                                                 
-                            par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]           
-                           -par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]        
-                            )/(par.x[j+1]-par.x[j])
+                                par.rho[i+1,j+1]*par.delta[i+1,j+1]*par.u[i+1,j+1]           
+                               -par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]        
+                                )/(par.x[j+1]-par.x[j])
                         )/\
                         (                                                                       
                         par.delta[i+1,j]*(par.g + 
@@ -277,6 +277,7 @@ def get_xidot(): # **
                 par.delta[i+1,j]*(par.g + (par.ps[i+1,j]*par.L**2)/(par.R*par.Ts[i+1,j]**2*par.cp))
                 )
 
+    print((par.ps[i+1,:]*par.L**2)/(par.R*par.Ts[i+1,:]**2*par.cp))
     return xidot
 
 def get_initial_conditions():
