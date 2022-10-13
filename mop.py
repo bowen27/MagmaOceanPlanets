@@ -124,7 +124,7 @@ def get_para(par, option = 1):
     p0_array = p0_array * par.p_free
     
     return Fnet_array, p0_array
-    
+
 def get_esat(x):
     # Saturation Vapor Pressure
     # Input x could be T or Ts in K
@@ -428,7 +428,6 @@ if __name__ == "__main__":
     
     # Time Integration
     par = parameters()
-    __init__(par)
     par.p0 = get_p0()
     get_initial_conditions()
 
