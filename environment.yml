@@ -3,7 +3,6 @@ channels:
   - defaults
 dependencies:
   - anyio=3.5.0
-  - appnope=0.1.2
   - argon2-cffi=21.3.0
   - argon2-cffi-bindings=21.2.0
   - asttokens=2.0.5
@@ -64,13 +63,11 @@ dependencies:
   - libbrotlicommon=1.0.9
   - libbrotlidec=1.0.9
   - libbrotlienc=1.0.9
-  - libclang=12.0.0
   - libcxx=14.0.6
   - libdeflate=1.8
   - libedit=3.1.20210910
   - libffi=3.3
   - libiconv=1.16
-  - libllvm12=12.0.0
   - libpng=1.6.37
   - libpq=12.9
   - libsodium=1.0.18
@@ -170,4 +167,3 @@ dependencies:
   - zstd=1.5.2
   - pip:
     - pyqt5-sip==12.11.0
-prefix: /Users/nala/miniconda3/envs/mop
