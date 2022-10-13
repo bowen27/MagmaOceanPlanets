@@ -67,6 +67,64 @@ class parameters:
         self.Ce,  self.Fnet \
         = (np.zeros([parameters.tlen,parameters.xlen],dtype='float') for i in range(14))
 
+class water_test(parameters):
+    # Thermodynamics of Atmosphere
+    M  = 18e-3    # molar weight of the atmosphere, unit in kg/mol
+    R  = 8.314/M  # gas constant of the amtosphere, unit in J/kg/K          
+    cp = 1864     # specific heat of the atmosphere, unit in J/kg/K
+    cv = cp-R     # specific heat, unit in J/kg/K
+    L  = 2260e3   # latent heat of condensation, unit in J/kg
+    
+    # Thermodynamics of Ocean
+    cpo  = 1 # speficic of the liquid in ocean, unit in J/kg/K， water is 4184
+    rhoo = 1000 # density of the ocean, unit in kg/m^3
+    ho   = 75 # depth of the ocean, unit in m
+    Co  = cpo*rhoo*ho # heat capacity of the ocean per unit surface area, J/m^2/K
+    
+    # Clausius-Clapeyron relation
+    pref = 3533 # reference pressure in Pa
+    Tref = 300  # reference temperature in K
+    
+class calc_test(parameters):
+    # Thermodyabsnamics of Atmosphere
+    M  = 1        # molar weight of the atmosphere, unit in kg/mol
+    R  = 8.314/M  # gas constant of the amtosphere, unit in J/kg/K          
+    cp = 1000     # specific heat of the atmosphere, unit in J/kg/K
+    cv = cp-R     # specific heat, unit in J/kg/K
+    L  = 1000e3   # latent heat of condensation, unit in J/kg
+    
+    # Thermodynamics of Ocean
+    cpo  = 1 # speficic of the liquid in ocean, unit in J/kg/K， water is 4184
+    rhoo = 1000 # density of the ocean, unit in kg/m^3
+    ho   = 10 # depth of the ocean, unit in m
+    Co  = cpo*rhoo*ho # heat capacity of the ocean per unit surface area, J/m^2/K
+    
+    # Clausius-Clapeyron relation
+    pref = 3533 # reference pressure in Pa
+    Tref = 300  # reference temperature in K
+    
+    p_free  = 0
+    p0 = 1000
+
+def get_para(par, option = 1):
+    # generate parameters (Fnet, p0) with specific distributions
+    # example: [par.Fnet, par.p0] = get_para(option = 2)
+    
+    # distribution of solar forcing
+    if option == 1:     # uniform distribution
+        Fnet_array = par.F * np.ones([par.xlen],dtype='float')
+
+    elif option == 2:   # cosine distribution (needs to be revised if periodic boundary condition)
+        Fnet_array = par.F * np.cos(np.pi * np.arange(0, par.ndeg + par.ddeg, par.ddeg) / par.ndeg)
+
+    else:               # no forcing
+        Fnet_array = np.zeros([par.xlen],dtype='float')
+        
+    p0_array = np.ones([par.xlen],dtype='float')
+    p0_array = p0_array * par.p_free
+    
+    return Fnet_array, p0_array
+    
 def get_esat(x):
     # Saturation Vapor Pressure
     # Input x could be T or Ts in K
