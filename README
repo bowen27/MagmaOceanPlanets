@@ -1,1 +1,39 @@
-This is a test readme.
+Version dispription
+
+Version 0.1: mop.py
+Updates: Basic structures of the model is created. Including 
+            (1) The definition of variables & parameters,
+            (2) Solver for future timesteps, 
+            (3) Time-integration (Euler-forward)
+            (4) Plotting the spatial distribution of variables.
+Problem: The boundary condition needs to be fixed.
+
+Version 0.2: Main_10062022_BF.ipynb
+Updates:
+  (1) The uniform solar forcing case is added as option = 1.
+  (2) Completed the initialization part. 
+Problem: The systems recevies infinite heating and evaporation.
+
+Version 0.3: Main_10072022_BF.ipynb
+Updates:
+  (1) The initial evaporation/condensation is self-consistant with other variables. 
+  (2) The radiative forcing is switched from solar heating to the total forcing (solar + OLR), which is able to change with time.
+  (3) The surface evaporation/condensation term is revised from \dot{\xi}*\delta to E. 
+  (4) Created a bug report when p0 is too high.
+  (5) Created a simulation progress report.
+Problem: When the simulation has a warm start, the values of atmospheric energy, temperature, and pressure goes wrong.
+  
+
+Version 0.4: Main_10182022_BF.ipynb
+Updates:
+  (1) The equations for atmospheric energy budget and EOS are removed. 
+      Boundary layer tempeature and pressure are assumed to the same as 
+      the surface values. The solver for future timesteps is revised 
+      based on that.
+Problem: The horizontal latent heat flux need to be included in the 
+         prognostic equaton. (when the solar forcing varies spatially).
+         
+Version 0.4.1: Main_10192022_BF.ipynb
+Updates:
+  (1) The boundary condition is switched from no-flux to periodic (in the prognostic equations).
+Problem: Testing is required.
