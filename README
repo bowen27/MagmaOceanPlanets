@@ -33,7 +33,7 @@ Updates:
 Problem: The horizontal latent heat flux need to be included in the 
          prognostic equaton. (when the solar forcing varies spatially).
          
-Version 0.4.1: Main_10192022_BF.ipynb
+Version 0.4.1: Main_10192022_BF.ipynb (equivalently, Main_10192022_FSA.py)
 Updates:
   (1) The boundary condition is switched from no-flux to periodic (in the prognostic equations).
 Problem: Testing is required.
