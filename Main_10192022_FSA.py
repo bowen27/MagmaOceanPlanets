@@ -251,13 +251,13 @@ def get_initial_conditions(Ts0 = 300, u0 = 0, option = 1):
     # interior
     for j in range(1, par.xlen-1):
         if par.u[i,j]>=0:
-            E[i,j] =  (par.alpha[i,j]*par.Fnet[i,j]/par.L +
+            par.E[i,j] =  (par.alpha[i,j]*par.Fnet[i,j]/par.L +
                        (par.rho[i,j]  *par.delta[i,j]  *par.u[i,j]              
                         -par.rho[i,j-1]*par.delta[i,j-1]*par.u[i,j-1]        
                         )/(par.dx)
                     )/(par.alpha[i,j]+1)
         elif par.u[i,j]<0:
-            E[i,j] = (par.alpha[i,j]*par.Fnet[i,j]/par.L +
+            par.E[i,j] = (par.alpha[i,j]*par.Fnet[i,j]/par.L +
                         (par.rho[i,j+1]  *par.delta[i,j+1]  *par.u[i,j+1]              
                          -par.rho[i,j]*par.delta[i,j]*par.u[i,j]        
                         )/(par.dx)
@@ -266,20 +266,20 @@ def get_initial_conditions(Ts0 = 300, u0 = 0, option = 1):
     # left boundary
     j = 0
     if par.u[i,j]>=0:
-        E[i,j] = (par.alpha[i,j]*par.Fnet[i,j]/par.L +
+        par.E[i,j] = (par.alpha[i,j]*par.Fnet[i,j]/par.L +
                        (par.rho[i,j]  *par.delta[i,j]  *par.u[i,j]              
                         -par.rho[i,-2]*par.delta[i,-2]*par.u[i,-2]        
                         )/(par.dx)
                 )/(par.alpha[i,j]+1)
     elif par.u[i,j]<0:
-        E[i,j] = (par.alpha[i,j]*par.Fnet[i,j]/par.L +
+        par.E[i,j] = (par.alpha[i,j]*par.Fnet[i,j]/par.L +
                         (par.rho[i,j+1]  *par.delta[i,j+1]  *par.u[i,j+1]              
                          -par.rho[i,j]*par.delta[i,j]*par.u[i,j]        
                         )/(par.dx)
                     )/(par.alpha[i,j]+1)
     # right boundary
     j = par.xlen-1
-    E[i,j] =  E[i,0]
+    par.E[i,j] =  par.E[i,0]
 # Time Integration
 par = parameters()
 __init__(par)
