@@ -336,3 +336,36 @@ ax[1,2].set_title('E (kg/m2/s)')
 
 plt.tight_layout()
 plt.show()
+
+# Plot distribution  
+fig, ax = plt.subplots(7,2,figsize=(10,30)) 
+
+# Plot at end of the simulation
+i = 0
+ax[0,0].plot(par.x/par.rp,par.Ts[i,:]) 
+ax[1,0].plot(par.x/par.rp,par.ps[i,:]) 
+ax[2,0].plot(par.x/par.rp,par.rho[i,:]) 
+ax[3,0].plot(par.x/par.rp,par.delta[i,:])
+ax[4,0].plot(par.x/par.rp,par.u[i,:]) 
+ax[5,0].plot(par.x/par.rp,par.E[i,:])
+ax[6,0].plot(par.x/par.rp,par.Fnet[i,:])
+
+i = -1
+ax[0,1].plot(par.x/par.rp,par.Ts[i,:]) 
+ax[1,1].plot(par.x/par.rp,par.ps[i,:]) 
+ax[2,1].plot(par.x/par.rp,par.rho[i,:]) 
+ax[3,1].plot(par.x/par.rp,par.delta[i,:])
+ax[4,1].plot(par.x/par.rp,par.u[i,:]) 
+ax[5,1].plot(par.x/par.rp,par.E[i,:])
+ax[6,1].plot(par.x/par.rp,par.Fnet[i,:])
+
+for c in range(0,2):    
+    ax[0,c].set_xlabel('Ts (K)')
+    ax[1,c].set_xlabel('ps (Pa)')
+    ax[2,c].set_xlabel('rho')
+    ax[3,c].set_xlabel('delta (m)')
+    ax[4,c].set_xlabel('u (m/s)')
+    ax[5,c].set_xlabel('E')
+    ax[6,c].set_xlabel('Fnet')
+plt.tight_layout()
+plt.show()
