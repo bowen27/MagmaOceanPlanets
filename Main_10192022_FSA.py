@@ -169,7 +169,7 @@ def get_u():
                                     par.delta[i,-2]*(par.rho[i,-2]*par.u[i,-2]**2 + par.ps[i,-2]) 
                                     )/                                                               
                                     (par.dx)                                            
-                                    )
+                                )
     elif par.u[i,j]<0:
         rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
@@ -280,6 +280,7 @@ def get_initial_conditions(Ts0 = 300, u0 = 0, option = 1):
     # right boundary
     j = par.xlen-1
     par.E[i,j] =  par.E[i,0]
+
 # Time Integration
 par = parameters()
 __init__(par)
@@ -309,3 +310,29 @@ for i in range(par.tlen-1):
         print("{} % completed".format(progress))
         
 print('Success!')
+
+
+# Plot time-evolution  
+fig, ax = plt.subplots(2,4,figsize=(20,10)) 
+
+L_year = 3600*24*365
+
+# Plot at end of the simulation
+ax[0,0].plot(par.t/L_year,par.Ts[:,0]) 
+ax[0,1].plot(par.t/L_year,par.ps[:,0]) 
+ax[0,2].plot(par.t/L_year,par.rho[:,0]) 
+ax[0,3].plot(par.t/L_year,par.rhodel[:,0]) 
+ax[1,0].plot(par.t/L_year,par.delta[:,0])
+ax[1,1].plot(par.t/L_year,par.u[:,0]) 
+ax[1,2].plot(par.t/L_year,par.E[:,0])
+
+ax[0,0].set_title('Ts (K)')
+ax[0,1].set_title('ps (Pa)')
+ax[0,2].set_title('rho (kg/m3)')
+ax[0,3].set_title('rho_delta')
+ax[1,0].set_title('delta (m)')
+ax[1,1].set_title('u (m/s)')
+ax[1,2].set_title('E (kg/m2/s)')
+
+plt.tight_layout()
+plt.show()
