@@ -23,7 +23,6 @@ Updates:
   (5) Created a simulation progress report.
 Problem: When the simulation has a warm start, the values of atmospheric energy, temperature, and pressure goes wrong.
   
-
 Version 0.4: Main_10182022_BF.ipynb
 Updates:
   (1) The equations for atmospheric energy budget and EOS are removed. 
@@ -37,3 +36,21 @@ Version 0.4.1: Main_10192022_BF.ipynb (equivalently, Main_10192022_FSA.py)
 Updates:
   (1) The boundary condition is switched from no-flux to periodic (in the prognostic equations).
 Problem: Testing is required.
+
+Version 0.5: Main_10202022_BF.ipynb
+Updates:
+  (1) The periodic boundary condition is corrected. Now the model can 
+  handle cases with uniform forcing + uniform wind.
+  (2) The advection and the non-dimensional number are seperated from 
+  the major calculations (for debugging and visudualization).
+  (3) The 2nd option for radiation is revised: relaxing from the uniform 
+  forcing to a non-uniform forcing gradually.
+Problem: The wind goes into instability with non-uniform forcings.
+
+Version 0.5.1: My_Shallow_Water_Model.ipynb
+Description: This is the traditional 1D shallow water model. The model only 
+            includes 2 variables: h and u. The function of this model is to test 
+            the adveciton schemes (from the 10202022 version) under a more 
+            straightforward case.
+Problem: The system goes into instability with no matter what advection schemes.
+            
