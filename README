@@ -37,7 +37,7 @@ Updates:
   (1) The boundary condition is switched from no-flux to periodic (in the prognostic equations).
 Problem: Testing is required.
 
-Version 0.5: Main_10202022_BF.ipynb
+Version 0.5: Main_10252022_BF.ipynb
 Updates:
   (1) The periodic boundary condition is corrected. Now the model can 
   handle cases with uniform forcing + uniform wind.
@@ -50,7 +50,7 @@ Problem: The wind goes into instability with non-uniform forcings.
 Version 0.5.1: My_Shallow_Water_Model.ipynb
 Description: This is the traditional 1D shallow water model. The model only 
             includes 2 variables: h and u. The function of this model is to test 
-            the adveciton schemes (from the 10202022 version) under a more 
+            the adveciton schemes (from the 10252022 version) under a more 
             straightforward case.
 Problem: The system goes into instability with no matter what advection schemes.
             
