@@ -32,10 +32,16 @@ Updates:
 Problem: The horizontal latent heat flux need to be included in the 
          prognostic equaton. (when the solar forcing varies spatially).
          
-Version 0.4.1: Main_10192022_BF.ipynb (equivalently, Main_10192022_FSA.py)
+Version 0.4.1: Main_10192022_BF.ipynb
 Updates:
   (1) The boundary condition is switched from no-flux to periodic (in the prognostic equations).
 Problem: Testing is required.
+
+Version 0.4.1: Main_10192022_FSA.py (copy of Main_10192022_BF.ipynb with some modifications)
+Updates: 
+  (1) The boundary condition is periodic. 
+  (2) The domain is the entire 360 degrees. 
+Goal: Understand why instabilities develop in the advection equation
 
 Version 0.5: Main_10252022_BF.ipynb
 Updates:
