@@ -4,9 +4,15 @@
 #The time evolution for the uniform forcing  case looks fine. 
 #The spartial pattern for the diffential forcing  case is problematic. Something is wrong in the advection or the boundary conditions.
 
+# Note: if we turn off the get_u(), no instabilities develop. 
+# If we turn on get_u(), instabilities seem to develop and propagate
+# as a result of the discontinuities between the edges
+# where u is zero and non-zero. 
+
 # Import python libraries
 import numpy as np
 import matplotlib.pyplot as plt 
+import random
 # Create parameter class
 
 class parameters:
@@ -16,19 +22,22 @@ class parameters:
     # information transfer at j=0 is physically consistent.   
 
     # Spatial grid
-    rp   = 6314e3            # radius of the planet in m
-    ndeg = 7                 # number of X-grid
+    rp   = 6314e3             # radius of the planet in m
+    ndeg = 100                # number of X-grid
     ddeg = 1
     dx   = 2*np.pi*rp/ndeg    # resolution of X-grid 
     x    = np.arange(0,ndeg+ddeg,ddeg)*dx        # X-grid in m
     xlen = len(x)           # length of X-grid
     theta = x/rp            # X-grid in radians [0,2*pi]
     solar_idx = np.argwhere((theta>=np.pi/2) & (theta<=3/2*np.pi)) # where to apply insolation
+    #print(solar_idx)
+    #print(800 * np.cos(theta[solar_idx]-np.pi))
     
     # Temporal grid
     dt   = 180 # seconds
     tmin = 0
-    tmax = dt*1e6
+    #tmax = dt*1e6
+    tmax = dt*1e5
     t    = np.arange(tmin,tmax+dt,dt)
     tlen = len(t)
     
@@ -141,6 +150,7 @@ def get_rhodel():
     rhodel = np.zeros([par.xlen],dtype='float') # (t+1)
     rhodel = par.rho[i+1,:]*par.delta[i+1,:]
     return rhodel
+
 def get_u(): 
     # Prognostic
     rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
@@ -148,7 +158,7 @@ def get_u():
     
     # interior
     for j in range(1, par.xlen-1):
-        if par.u[i,j]>=0:
+        if par.u[i,j]>0:
             rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                     (                                                                
@@ -166,6 +176,27 @@ def get_u():
                                 )/                                                               
                                 (par.x[j+1]-par.x[j])                                            
                                 )
+        elif par.u[i,j]==0:
+            # randomly use forward or backward difference
+            if random.randint(0, 1):
+                rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
+                         par.dt*(par.Cu[i,j] -                                                   
+                                    (                                                                
+                                    par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.ps[i,j])-   
+                                    par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.ps[i,j-1]) 
+                                    )/                                                               
+                                    (par.x[j]-par.x[j-1])                                            
+                                    )
+            else: 
+                rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
+                         par.dt*(par.Cu[i,j] -                                                   
+                                (                                                                
+                                par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + par.ps[i,j+1])-   
+                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2     + par.ps[i,j]) 
+                                )/                                                               
+                                (par.x[j+1]-par.x[j])                                            
+                                )
+
     # Periodic boundary conditions
     j = 0
     if par.u[i,j]>=0:
@@ -190,11 +221,17 @@ def get_u():
     rhodelu[j] = rhodelu[0]
     
     u = rhodelu[:]/par.rhodel[i+1,:]
+    u = np.zeros([par.xlen],dtype='float')
+
     return u
+
+
 def get_alpha():
     alpha = np.zeros([par.xlen],dtype='float') # (t+1)
     alpha = (par.ps[i+1,:]*par.L**2)/(par.R*par.Ts[i+1,:]**2*par.Co*par.g)
     return alpha
+
+
 def get_E(): # **
     # Diagnostic
     E = np.zeros([par.xlen],dtype='float') # (t+1)
@@ -253,7 +290,6 @@ def get_initial_conditions(Ts0 = 300, u0 = 0, option = 1):
     elif option == 2:   # two-hemisphere configuration _/\_ over [0,2*pi]
         F_solar = np.zeros([par.xlen],dtype='float')
         F_solar[par.solar_idx] = par.F * np.cos(par.theta[par.solar_idx]-np.pi)
-        print(F_solar)
         par.Fnet[i,:] = F_solar - par.sigma * par.Ts[i+1,:] ** 4
 
     par.E[i,:]    = np.zeros([par.xlen],dtype='float')      # zero surface mass-flux   
@@ -303,7 +339,7 @@ for i in range(par.tlen-1):
 
     # Get variables at the next time step
     par.Ts[i+1,:]       = get_Ts()
-    par.Fnet[i+1,:]     = get_Fnet(option=1)
+    par.Fnet[i+1,:]     = get_Fnet(option=2)
     par.ps[i+1,:]       = get_ps()
     par.rho[i+1,:]      = get_rho()
     par.delta[i+1,:]    = get_delta() 
@@ -359,7 +395,8 @@ ax[4,0].plot(par.x/par.rp,par.u[i,:])
 ax[5,0].plot(par.x/par.rp,par.E[i,:])
 ax[6,0].plot(par.x/par.rp,par.Fnet[i,:])
 
-i = int(np.round((par.tlen-1)/2))
+#i = int(np.round((par.tlen-1)/2))
+i = par.tlen-1
 ax[0,1].plot(par.x/par.rp,par.Ts[i,:]) 
 ax[1,1].plot(par.x/par.rp,par.ps[i,:]) 
 ax[2,1].plot(par.x/par.rp,par.rho[i,:]) 
