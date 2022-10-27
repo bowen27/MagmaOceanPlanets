@@ -10,14 +10,20 @@ import matplotlib.pyplot as plt
 # Create parameter class
 
 class parameters:
-    
+    # In this version, I simulate both hemispheres of the planet. 
+    # The x-grid extends from [0,2*pi], s.t. if periodic BC
+    # incorporate the information at j=-2, 
+    # information transfer at j=0 is physically consistent.   
+
     # Spatial grid
-    rp   = 6314e3           # radius of the planet in m
-    ndeg = 5                # number of X-grid
+    rp   = 6314e3            # radius of the planet in m
+    ndeg = 7                 # number of X-grid
     ddeg = 1
-    dx   = rp*np.pi/ndeg    # resolution of X-grid 
+    dx   = 2*np.pi*rp/ndeg    # resolution of X-grid 
     x    = np.arange(0,ndeg+ddeg,ddeg)*dx        # X-grid in m
     xlen = len(x)           # length of X-grid
+    theta = x/rp            # X-grid in radians [0,2*pi]
+    solar_idx = np.argwhere((theta>=np.pi/2) & (theta<=3/2*np.pi)) # where to apply insolation
     
     # Temporal grid
     dt   = 180 # seconds
@@ -81,6 +87,7 @@ def get_Cu():
     Cu = np.zeros([par.xlen],dtype='float')
     Cu = -par.rho[i,:]*par.delta[i,:]*par.u[i,:]/par.tau    
     return Cu  
+
 def get_Fnet(option = 1):
     # generate parameter (Fnet) with specific distributions
      
@@ -88,14 +95,14 @@ def get_Fnet(option = 1):
     if option == 1:     # uniform distribution
         F_solar = par.F * np.ones([par.xlen],dtype='float')
         Fnet = F_solar - par.sigma * par.Ts[i+1,:] ** 4
-        
-    elif option == 2:   # sine distribution (needs to be revised if periodic boundary condition)
-        F_solar = par.F * (np.sin(np.pi/2 * np.arange(0, par.ndeg + par.ddeg, par.ddeg) / par.ndeg) + 1)
+    elif option == 2:   # two-hemisphere configuration _/\_ over [0,2*pi]
+        F_solar = np.zeros([par.xlen],dtype='float')
+        F_solar[par.solar_idx] = par.F * np.cos(par.theta[par.solar_idx]-np.pi)
         Fnet = F_solar - par.sigma * par.Ts[i+1,:] ** 4
-    else:               # no forcing
+    else: # no forcing
         Fnet = np.zeros([par.xlen],dtype='float')
-
     return Fnet
+    
 def get_Ts(): 
     # Prognostic
     Ts = np.zeros([par.xlen],dtype='float')
@@ -243,10 +250,12 @@ def get_initial_conditions(Ts0 = 300, u0 = 0, option = 1):
     if option == 1:     # uniform distribution
         F_solar = par.F * np.ones([par.xlen],dtype='float')
         par.Fnet[i,:] = F_solar - par.sigma * par.Ts[i,:] **4      
-    elif option == 2:   # cosine distribution (needs to be revised if periodic boundary condition)
-        F_solar = par.F * np.cos(np.pi * np.arange(0, par.ndeg + par.ddeg, par.ddeg) / par.ndeg)
-        par.Fnet[i,:] = F_solar - par.sigma * par.Ts[i,:] **4
-    
+    elif option == 2:   # two-hemisphere configuration _/\_ over [0,2*pi]
+        F_solar = np.zeros([par.xlen],dtype='float')
+        F_solar[par.solar_idx] = par.F * np.cos(par.theta[par.solar_idx]-np.pi)
+        print(F_solar)
+        par.Fnet[i,:] = F_solar - par.sigma * par.Ts[i+1,:] ** 4
+
     par.E[i,:]    = np.zeros([par.xlen],dtype='float')      # zero surface mass-flux   
     # interior
     for j in range(1, par.xlen-1):
@@ -350,7 +359,7 @@ ax[4,0].plot(par.x/par.rp,par.u[i,:])
 ax[5,0].plot(par.x/par.rp,par.E[i,:])
 ax[6,0].plot(par.x/par.rp,par.Fnet[i,:])
 
-i = -1
+i = int(np.round((par.tlen-1)/2))
 ax[0,1].plot(par.x/par.rp,par.Ts[i,:]) 
 ax[1,1].plot(par.x/par.rp,par.ps[i,:]) 
 ax[2,1].plot(par.x/par.rp,par.rho[i,:]) 
