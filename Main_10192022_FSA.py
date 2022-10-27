@@ -8,6 +8,10 @@
 # If we turn on get_u(), instabilities seem to develop and propagate
 # as a result of the discontinuities between the edges
 # where u is zero and non-zero. 
+# If we leave on get_u(), but fix get_E() what happens? Some instabilities develop.
+# I think that the interaction between get_u() and get_E() causes the instabilities.
+# I can change the hemisphere where the instabilities develop by switching in unison
+# between >=0 and <=0 for get_u and get_E 
 
 # Import python libraries
 import numpy as np
@@ -37,7 +41,7 @@ class parameters:
     dt   = 180 # seconds
     tmin = 0
     #tmax = dt*1e6
-    tmax = dt*1e5
+    tmax = dt*25
     t    = np.arange(tmin,tmax+dt,dt)
     tlen = len(t)
     
@@ -178,7 +182,8 @@ def get_u():
                                 )
         elif par.u[i,j]==0:
             # randomly use forward or backward difference
-            if random.randint(0, 1):
+            #if random.randint(0, 1):
+            if 0:
                 rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                     (                                                                
@@ -196,6 +201,7 @@ def get_u():
                                 )/                                                               
                                 (par.x[j+1]-par.x[j])                                            
                                 )
+            
 
     # Periodic boundary conditions
     j = 0
@@ -219,10 +225,9 @@ def get_u():
                                 )
     j = par.xlen-1
     rhodelu[j] = rhodelu[0]
-    
-    u = rhodelu[:]/par.rhodel[i+1,:]
-    u = np.zeros([par.xlen],dtype='float')
 
+    u = rhodelu[:]/par.rhodel[i+1,:]
+    #u = np.zeros([par.xlen],dtype='float') # option to turn on/off get_u()
     return u
 
 
@@ -238,7 +243,7 @@ def get_E(): # **
     
     # interior
     for j in range(1, par.xlen-1):
-        if par.u[i,j]>=0:
+        if par.u[i,j]>0:
             E[j] =  (par.alpha[i+1,j]*par.Fnet[i+1,j]/par.L +
                        (par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]              
                         -par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
@@ -250,6 +255,22 @@ def get_E(): # **
                          -par.rho[i+1,j]*par.delta[i+1,j]*par.u[i+1,j]        
                         )/(par.dx)
                     )/(par.alpha[i+1,j]+1)
+        elif par.u[i,j]==0:
+            # randomly use forward or backward difference
+            #if random.randint(0, 1):
+            if 0:
+                E[j] =  (par.alpha[i+1,j]*par.Fnet[i+1,j]/par.L +
+                       (par.rho[i+1,j]  *par.delta[i+1,j]  *par.u[i+1,j]              
+                        -par.rho[i+1,j-1]*par.delta[i+1,j-1]*par.u[i+1,j-1]        
+                        )/(par.dx)
+                    )/(par.alpha[i+1,j]+1)
+            else:
+                E[j] = (par.alpha[i+1,j]*par.Fnet[i+1,j]/par.L +
+                        (par.rho[i+1,j+1]  *par.delta[i+1,j+1]  *par.u[i+1,j+1]              
+                         -par.rho[i+1,j]*par.delta[i+1,j]*par.u[i+1,j]        
+                        )/(par.dx)
+                    )/(par.alpha[i+1,j]+1)
+                
     # Periodic boundary conditions
     # left boundary
     j = 0
@@ -268,8 +289,9 @@ def get_E(): # **
     # right boundary
     j = par.xlen-1
     E[j] =  E[0]
-    
+
     return E
+
 def get_initial_conditions(Ts0 = 300, u0 = 0, option = 1):
     # Scenario: intially saturated atmosphere with uniform Ts,T,p,delta,etc.
     i = 0
