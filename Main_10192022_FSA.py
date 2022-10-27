@@ -155,10 +155,45 @@ def get_rhodel():
     rhodel = par.rho[i+1,:]*par.delta[i+1,:]
     return rhodel
 
-def get_u(): 
+def get_u(): # using half-step upwind scheme
     # Prognostic
     rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
     u = np.zeros([par.xlen],dtype='float')       # (t+1)
+    # interior
+
+
+
+def get_unew(): 
+    # Prognostic
+    rhodelu = np.zeros([par.xlen],dtype='float') # (t+1)
+    u = np.zeros([par.xlen],dtype='float')       # (t+1)
+    for j in range(1, par.xlen-1):
+
+        u_ph  = (par.u[i,j+1] + par.u[i,j])/2
+        u_mh  = (par.u[i,j-1] + par.u[i,j])/2
+        rho_ph = (par.rho[i,j+1] + par.rho[i,j])/2
+        rho_mh = (par.rho[i,j-1] + par.rho[i,j])/2
+        delta_ph = (par.delta[i,j+1] + par.delta[i,j])/2
+        delta_mh = (par.delta[i,j-1] + par.delta[i,j])/2
+        ps_ph  = (par.ps[i,j+1] + par.ps[i,j])/2
+        ps_mh  = (par.ps[i,j-1] + par.ps[i,j])/2
+
+        if par.u[i,j]>0:
+            rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
+                         par.dt*(par.Cu[i,j] -                                                   
+                                    (
+                                    delta_ph*(rho_ph*u_ph**2 + 0.5*ps_ph)-
+                                    delta
+
+                                    )/par.dx                                         
+                                )
+
+        elif par.u[i,j]<0:
+            print('hi')
+
+        elif par.u[i,j]==0:
+            print('hi')
+            
     
     # interior
     for j in range(1, par.xlen-1):
@@ -166,8 +201,8 @@ def get_u():
             rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                     (                                                                
-                                    par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.ps[i,j])-   
-                                    par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.ps[i,j-1]) 
+                                    par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + 0.5*par.ps[i,j])-   
+                                    par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + 0.5*par.ps[i,j-1]) 
                                     )/                                                               
                                     (par.x[j]-par.x[j-1])                                            
                                     )
@@ -175,8 +210,8 @@ def get_u():
             rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                 (                                                                
-                                par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + par.ps[i,j+1])-   
-                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2     + par.ps[i,j]) 
+                                par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + 0.5*par.ps[i,j+1])-   
+                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2     + 0.5*par.ps[i,j]) 
                                 )/                                                               
                                 (par.x[j+1]-par.x[j])                                            
                                 )
@@ -187,8 +222,8 @@ def get_u():
                 rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                     (                                                                
-                                    par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.ps[i,j])-   
-                                    par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + par.ps[i,j-1]) 
+                                    par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + 0.5*par.ps[i,j])-   
+                                    par.delta[i,j-1]*(par.rho[i,j-1]*par.u[i,j-1]**2 + 0.5*par.ps[i,j-1]) 
                                     )/                                                               
                                     (par.x[j]-par.x[j-1])                                            
                                     )
@@ -196,8 +231,8 @@ def get_u():
                 rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                 (                                                                
-                                par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + par.ps[i,j+1])-   
-                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2     + par.ps[i,j]) 
+                                par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + 0.5*par.ps[i,j+1])-   
+                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2     + 0.5*par.ps[i,j]) 
                                 )/                                                               
                                 (par.x[j+1]-par.x[j])                                            
                                 )
@@ -209,8 +244,8 @@ def get_u():
         rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +  \
                         par.dt*(par.Cu[i,j] -                                                   
                                     (                                                                
-                                    par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + par.ps[i,j])-   
-                                    par.delta[i,-2]*(par.rho[i,-2]*par.u[i,-2]**2 + par.ps[i,-2]) 
+                                    par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2   + 0.5*par.ps[i,j])-   
+                                    par.delta[i,-2]*(par.rho[i,-2]*par.u[i,-2]**2 + 0.5*par.ps[i,-2]) 
                                     )/                                                               
                                     (par.dx)                                            
                                 )
@@ -218,8 +253,8 @@ def get_u():
         rhodelu[j] = par.rho[i,j]*par.delta[i,j]*par.u[i,j] +                                \
                          par.dt*(par.Cu[i,j] -                                                   
                                 (                                                                
-                                par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + par.ps[i,j+1])-   
-                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2     + par.ps[i,j]) 
+                                par.delta[i,j+1]*(par.rho[i,j+1]*par.u[i,j+1]**2   + 0.5*par.ps[i,j+1])-   
+                                par.delta[i,j]  *(par.rho[i,j]  *par.u[i,j]**2     + 0.5*par.ps[i,j]) 
                                 )/                                                               
                                 (par.x[j+1]-par.x[j])                                            
                                 )
