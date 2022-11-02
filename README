@@ -59,4 +59,16 @@ Description: This is the traditional 1D shallow water model. The model only
             the adveciton schemes (from the 10252022 version) under a more 
             straightforward case.
 Problem: The system goes into instability with no matter what advection schemes.
+
+Version 0.6: My_Shallow_Water_Model_11012022.ipynb
+Description: The advection is successfully calculated with Lax–Friedrichs Method.
+Problem: Maybe a more sophiscated scheme?
+
+Version 1.0: Main_11012022_BF.ipynb
+Updates:
+  (1) The advection is successfully calculated with Lax–Friedrichs Method.
+  (2) The results are consistent with that predicted with the non-dimensional number (alpha).
+  When alpha << 1 (due to deep ocean or small vapor pressure), the balance is between 
+  evaporation and advection. When alpha >> 1, the balance transitions to evaporation and 
+  radiation.
             
